@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPS 点手动创建与定位 - Demo</title>
+  <style>
+    :root {
+      --bg-primary: #0f1419;
+      --bg-secondary: #1a2332;
+      --bg-tertiary: #243044;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b9cb3;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --border: #2d3a4f;
+      --success: #22c55e;
+      --warn: #eab308;
+      --danger: #ef4444;
+      --top-h: 48px;
+      --left-w: 260px;
+      --right-w: 300px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .app { display: flex; flex-direction: column; height: 100vh; }
+
+    .top-bar {
+      height: var(--top-h);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .top-bar__title { font-weight: 600; font-size: 15px; }
+    .top-bar__badge {
+      background: var(--bg-tertiary);
+      padding: 4px 12px;
+      border-radius: 4px;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .main { flex: 1; display: flex; min-height: 0; }
+
+    .panel {
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel--left { width: var(--left-w); min-width: var(--left-w); }
+    .panel--right {
+      width: var(--right-w);
+      min-width: var(--right-w);
+      border-right: none;
+      border-left: 1px solid var(--border);
+    }
+
+    .panel__header {
+      padding: 12px 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .panel__body { flex: 1; overflow: auto; padding: 8px 0; }
+
+    .tree-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 13px;
+    }
+
+    .tree-item:hover { background: var(--bg-tertiary); }
+    .tree-item--selected { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+    .tree-item--child { padding-left: 32px; }
+    .tree-item__icon { width: 14px; text-align: center; opacity: 0.7; }
+    .tree-item__status {
+      margin-left: auto;
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+    .tree-item__status--pending { background: rgba(234, 179, 8, 0.2); color: var(--warn); }
+    .tree-item__status--done { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+
+    .canvas-wrap {
+      flex: 1;
+      position: relative;
+      background: #121820;
+    }
+
+    #canvas3d { width: 100%; height: 100%; display: block; }
+
+    .canvas-overlay {
+      position: absolute;
+      pointer-events: none;
+      inset: 0;
+    }
+
+    .canvas-hint {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(26, 35, 50, 0.92);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .canvas-hint strong { color: var(--accent); }
+
+    .coords-bar {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(26, 35, 50, 0.95);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 8px;
+      pointer-events: auto;
+    }
+
+    .coords-bar label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .coords-bar input {
+      width: 88px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 5px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: "Consolas", monospace;
+    }
+
+    .coords-bar input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .coords-bar input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .toolbar {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      display: flex;
+      gap: 6px;
+      pointer-events: auto;
+    }
+
+    .btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.15s;
+    }
+
+    .btn:hover { background: #2d3f58; }
+    .btn--primary { background: var(--accent); border-color: var(--accent); }
+    .btn--primary:hover { background: var(--accent-hover); }
+    .btn--success { background: #16a34a; border-color: #16a34a; }
+    .btn--success:hover { background: #15803d; }
+    .btn--danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+    .btn--danger:hover { background: rgba(239, 68, 68, 0.15); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn--active { box-shadow: 0 0 0 2px var(--accent); }
+
+    .rps-panel { padding: 12px 16px; }
+
+    .progress-card {
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .progress-card__title {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--bg-primary);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .progress-bar__fill {
+      height: 100%;
+      background: var(--success);
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+
+    .progress-card__text { font-size: 13px; }
+
+    .section-title {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin: 16px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .rps-list { list-style: none; }
+
+    .rps-list__item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .rps-list__item:hover { border-color: var(--border); }
+    .rps-list__item--active { border-color: var(--accent); background: rgba(59, 130, 246, 0.1); }
+
+    .rps-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .rps-dot--pending { background: var(--warn); }
+    .rps-dot--positioning { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .rps-dot--done { background: var(--success); }
+
+    .rps-list__info { flex: 1; min-width: 0; }
+    .rps-list__name { font-weight: 500; font-size: 13px; }
+    .rps-list__coord {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-family: Consolas, monospace;
+      margin-top: 2px;
+    }
+
+    .action-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+    .steps {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+
+    .steps ol { padding-left: 18px; }
+    .steps li.done { color: var(--success); }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 1000;
+      transition: transform 0.3s;
+      pointer-events: none;
+    }
+
+    .toast--show { transform: translateX(-50%) translateY(0); }
+
+    .complete-banner {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(22, 163, 74, 0.95);
+      color: white;
+      padding: 20px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .complete-banner--show { display: block; animation: fadeIn 0.4s; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top-bar">
+      <span class="top-bar__title">闪设 3D — RPS 点定位 Demo</span>
+      <span class="top-bar__badge">ceshi · 手动创建 RPS 点</span>
+    </header>
+
+    <div class="main">
+      <!-- 模型树 -->
+      <aside class="panel panel--left">
+        <div class="panel__header">模型树</div>
+        <div class="panel__body" id="modelTree"></div>
+      </aside>
+
+      <!-- 3D 画布 -->
+      <div class="canvas-wrap">
+        <canvas id="canvas3d"></canvas>
+        <div class="canvas-overlay">
+          <div class="canvas-hint" id="canvasHint">
+            点击 <strong>「+ 创建 RPS 点」</strong> 开始添加定位点
+          </div>
+          <div class="complete-banner" id="completeBanner">
+            ✓ 全部 RPS 点坐标已确定
+          </div>
+          <div class="toolbar">
+            <button class="btn btn--primary" id="btnCreate">+ 创建 RPS 点</button>
+            <button class="btn" id="btnPlaceMode" disabled>点击放置</button>
+            <button class="btn" id="btnDragMode" disabled>拖拽移动</button>
+          </div>
+          <div class="coords-bar">
+            <label>X <input type="number" id="inputX" step="0.01" disabled /></label>
+            <label>Y <input type="number" id="inputY" step="0.01" disabled /></label>
+            <label>Z <input type="number" id="inputZ" step="0.01" disabled /></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- RPS 面板 -->
+      <aside class="panel panel--right">
+        <div class="panel__header">RPS 点管理</div>
+        <div class="rps-panel">
+          <div class="progress-card">
+            <div class="progress-card__title">定位进度</div>
+            <div class="progress-bar">
+              <div class="progress-bar__fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <div class="progress-card__text" id="progressText">0 / 0 个点已确定坐标</div>
+          </div>
+
+          <button class="btn btn--primary" id="btnCreate2" style="width: 100%">+ 创建 RPS 点</button>
+
+          <div class="section-title">RPS 点列表</div>
+          <ul class="rps-list" id="rpsList">
+            <li style="color: var(--text-secondary); font-size: 13px; padding: 8px 0;">暂无 RPS 点</li>
+          </ul>
+
+          <div class="action-row">
+            <button class="btn btn--success" id="btnConfirm" disabled>确认坐标</button>
+            <button class="btn btn--danger" id="btnDelete" disabled>删除选中</button>
+          </div>
+        </div>
+        <div class="steps">
+          <strong>操作流程</strong>
+          <ol id="stepList">
+            <li>创建 RPS 点</li>
+            <li>在模型表面点击放置</li>
+            <li>拖拽或输入 XYZ 微调</li>
+            <li>确认坐标</li>
+          </ol>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ─── 状态 ───
+    let rpsCounter = 0;
+    /** @type {{ id: string, name: string, status: 'pending'|'positioning'|'done', position: THREE.Vector3 | null, mesh: THREE.Mesh | null }[]} */
+    let rpsPoints = [];
+    let selectedId = null;
+    let placeMode = false;
+    let dragMode = false;
+    let isDragging = false;
+    const dragPlane = new THREE.Plane();
+    const dragOffset = new THREE.Vector3();
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const intersectPoint = new THREE.Vector3();
+
+    // ─── Three.js 场景 ───
+    const canvas = document.getElementById('canvas3d');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x121820);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+    camera.position.set(8, 5, 10);
+
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, 1.2, 0);
+
+    // 灯光
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    dirLight.position.set(5, 10, 7);
+    scene.add(dirLight);
+
+    // 网格
+    const grid = new THREE.GridHelper(20, 40, 0x333344, 0x222233);
+    grid.position.y = -0.01;
+    scene.add(grid);
+
+    // 模拟零件 — 汽车结构件风格
+    const partGroup = new THREE.Group();
+    const partMaterial = new THREE.MeshStandardMaterial({
+      color: 0x6a7a8a,
+      metalness: 0.35,
+      roughness: 0.55,
+    });
+
+    // 主体
+    const mainBody = new THREE.Mesh(
+      new THREE.BoxGeometry(6, 0.4, 4),
+      partMaterial
+    );
+    mainBody.position.set(0, 0.2, 0);
+    mainBody.name = 'mainBody';
+    partGroup.add(mainBody);
+
+    // 加强筋
+    const ribGeo = new THREE.BoxGeometry(0.15, 1.2, 3.5);
+    for (let i = -2; i <= 2; i++) {
+      const rib = new THREE.Mesh(ribGeo, partMaterial);
+      rib.position.set(i * 1.2, 0.8, 0);
+      rib.name = 'rib';
+      partGroup.add(rib);
+    }
+
+    // 侧壁
+    const wallGeo = new THREE.BoxGeometry(6, 1.5, 0.2);
+    const wallL = new THREE.Mesh(wallGeo, partMaterial);
+    wallL.position.set(0, 0.95, -1.9);
+    wallL.name = 'wall';
+    partGroup.add(wallL);
+    const wallR = wallL.clone();
+    wallR.position.z = 1.9;
+    partGroup.add(wallR);
+
+    // 凸起特征
+    const boss = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.5, 0.5, 0.3, 24),
+      partMaterial
+    );
+    boss.position.set(1.5, 0.55, 0.8);
+    boss.name = 'boss';
+    partGroup.add(boss);
+
+    scene.add(partGroup);
+
+    // 可拾取表面集合
+    const pickables = [];
+    partGroup.traverse((child) => {
+      if (child.isMesh) pickables.push(child);
+    });
+
+    // RPS 点标记组
+    const rpsGroup = new THREE.Group();
+    rpsGroup.name = 'RpsGroup';
+    scene.add(rpsGroup);
+
+  // ─── DOM 引用 ───
+    const $ = (id) => document.getElementById(id);
+    const modelTree = $('modelTree');
+    const rpsList = $('rpsList');
+    const canvasHint = $('canvasHint');
+    const progressFill = $('progressFill');
+    const progressText = $('progressText');
+    const inputX = $('inputX');
+    const inputY = $('inputY');
+    const inputZ = $('inputZ');
+    const btnCreate = $('btnCreate');
+    const btnCreate2 = $('btnCreate2');
+    const btnPlaceMode = $('btnPlaceMode');
+    const btnDragMode = $('btnDragMode');
+    const btnConfirm = $('btnConfirm');
+    const btnDelete = $('btnDelete');
+    const completeBanner = $('completeBanner');
+    const toast = $('toast');
+
+    // ─── 工具函数 ───
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('toast--show');
+      setTimeout(() => toast.classList.remove('toast--show'), 2500);
+    }
+
+    function fmt(v) {
+      return v.toFixed(2);
+    }
+
+    function getSelected() {
+      return rpsPoints.find((p) => p.id === selectedId) || null;
+    }
+
+    function createRpsMarker(color, emissive) {
+      const geo = new THREE.SphereGeometry(0.12, 24, 24);
+      const mat = new THREE.MeshStandardMaterial({
+        color,
+        emissive,
+        emissiveIntensity: 0.6,
+        metalness: 0.2,
+        roughness: 0.4,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      // 外圈
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.14, 0.2, 32),
+        new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.7 })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      mesh.add(ring);
+      return mesh;
+    }
+
+    function updateMarkerColor(point) {
+      if (!point.mesh) return;
+      const colors = {
+        pending: { c: 0xeab308, e: 0x886600 },
+        positioning: { c: 0x3b82f6, e: 0x1d4ed8 },
+        done: { c: 0x22c55e, e: 0x15803d },
+      };
+      const { c, e } = colors[point.status];
+      point.mesh.material.color.setHex(c);
+      point.mesh.material.emissive.setHex(e);
+      point.mesh.children[0].material.color.setHex(c);
+      point.mesh.visible = point.position !== null;
+    }
+
+    // ─── UI 更新 ───
+    function renderModelTree() {
+      const doneCount = rpsPoints.filter((p) => p.status === 'done').length;
+      let html = `
+        <div class="tree-item">
+          <span class="tree-item__icon">📦</span>
+          <span>11407319_05_AllCATPart</span>
+        </div>
+        <div class="tree-item tree-item--child">
+          <span class="tree-item__icon">📁</span>
+          <span>RpsGroup</span>
+          <span class="tree-item__status ${doneCount === rpsPoints.length && rpsPoints.length > 0 ? 'tree-item__status--done' : 'tree-item__status--pending'}">
+            ${rpsPoints.length > 0 ? `${doneCount}/${rpsPoints.length}` : '空'}
+          </span>
+        </div>
+      `;
+      rpsPoints.forEach((p) => {
+        const sel = p.id === selectedId ? ' tree-item--selected' : '';
+        const child = ' tree-item--child';
+        const deeper = ' style="padding-left: 48px"';
+        const statusCls = p.status === 'done' ? 'tree-item__status--done' : 'tree-item__status--pending';
+        const statusText = p.status === 'done'
+          ? `${fmt(p.position.x)}, ${fmt(p.position.y)}, ${fmt(p.position.z)}`
+          : p.status === 'positioning' ? '定位中' : '待放置';
+        html += `
+          <div class="tree-item${sel}${child}"${deeper} data-id="${p.id}">
+            <span class="tree-item__icon">●</span>
+            <span>${p.name}</span>
+            <span class="tree-item__status ${statusCls}">${statusText}</span>
+          </div>
+        `;
+      });
+      modelTree.innerHTML = html;
+      modelTree.querySelectorAll('[data-id]').forEach((el) => {
+        el.addEventListener('click', () => selectPoint(el.dataset.id));
+      });
+    }
+
+    function renderRpsList() {
+      if (rpsPoints.length === 0) {
+        rpsList.innerHTML = '<li style="color: var(--text-secondary); font-size: 13px; padding: 8px 0;">暂无 RPS 点，请点击创建</li>';
+        return;
+      }
+      rpsList.innerHTML = rpsPoints.map((p) => {
+        const active = p.id === selectedId ? ' rps-list__item--active' : '';
+        const dotCls = `rps-dot--${p.status}`;
+        const coord = p.status === 'done' && p.position
+          ? `X:${fmt(p.position.x)} Y:${fmt(p.position.y)} Z:${fmt(p.position.z)}`
+          : p.status === 'positioning' ? '正在定位…' : '待放置';
+        return `
+          <li class="rps-list__item${active}" data-id="${p.id}">
+            <span class="rps-dot ${dotCls}"></span>
+            <div class="rps-list__info">
+              <div class="rps-list__name">${p.name}</div>
+              <div class="rps-list__coord">${coord}</div>
+            </div>
+          </li>
+        `;
+      }).join('');
+      rpsList.querySelectorAll('[data-id]').forEach((el) => {
+        el.addEventListener('click', () => selectPoint(el.dataset.id));
+      });
+    }
+
+    function updateProgress() {
+      const total = rpsPoints.length;
+      const done = rpsPoints.filter((p) => p.status === 'done').length;
+      const pct = total > 0 ? (done / total) * 100 : 0;
+      progressFill.style.width = `${pct}%`;
+      progressText.textContent = `${done} / ${total} 个点已确定坐标`;
+
+      if (total > 0 && done === total) {
+        completeBanner.classList.add('complete-banner--show');
+        canvasHint.style.opacity = '0';
+        showToast('所有 RPS 点坐标已确定！');
+      } else {
+        completeBanner.classList.remove('complete-banner--show');
+        canvasHint.style.opacity = '1';
+      }
+    }
+
+    function updateCoordInputs() {
+      const sel = getSelected();
+      const editable = sel && sel.status === 'positioning';
+      inputX.disabled = !editable;
+      inputY.disabled = !editable;
+      inputZ.disabled = !editable;
+      if (editable && sel.position) {
+        inputX.value = fmt(sel.position.x);
+        inputY.value = fmt(sel.position.y);
+        inputZ.value = fmt(sel.position.z);
+      } else {
+        inputX.value = '';
+        inputY.value = '';
+        inputZ.value = '';
+      }
+    }
+
+    function updateButtons() {
+      const sel = getSelected();
+      const hasSelection = !!sel;
+      const isPositioning = sel?.status === 'positioning';
+      const isDone = sel?.status === 'done';
+
+      btnPlaceMode.disabled = !hasSelection || isDone;
+      btnDragMode.disabled = !isPositioning;
+      btnConfirm.disabled = !isPositioning || !sel?.position;
+      btnDelete.disabled = !hasSelection;
+
+      btnPlaceMode.classList.toggle('btn--active', placeMode);
+      btnDragMode.classList.toggle('btn--active', dragMode);
+
+      if (!sel) {
+        canvasHint.innerHTML = '点击 <strong>「+ 创建 RPS 点」</strong> 开始添加定位点';
+      } else if (sel.status === 'pending') {
+        canvasHint.innerHTML = `已选中 <strong>${sel.name}</strong> — 点击 <strong>「点击放置」</strong> 后在模型表面点击`;
+      } else if (sel.status === 'positioning') {
+        canvasHint.innerHTML = `正在定位 <strong>${sel.name}</strong> — 拖拽移动或修改 XYZ，完成后点击 <strong>「确认坐标」</strong>`;
+      } else {
+        canvasHint.innerHTML = `<strong>${sel.name}</strong> 坐标已确定 — 可选择其他待定位的点`;
+      }
+    }
+
+    function refreshUI() {
+      renderModelTree();
+      renderRpsList();
+      updateProgress();
+      updateCoordInputs();
+      updateButtons();
+    }
+
+    // ─── RPS 操作 ───
+    function createRpsPoint() {
+      rpsCounter++;
+      const id = `rps-${rpsCounter}`;
+      const point = {
+        id,
+        name: `RPS_${String(rpsCounter).padStart(2, '0')}`,
+        status: 'pending',
+        position: null,
+        mesh: null,
+      };
+      rpsPoints.push(point);
+      selectedId = id;
+      placeMode = true;
+      dragMode = false;
+      canvas.style.cursor = 'crosshair';
+      showToast(`已创建 ${point.name}，请在模型表面点击放置`);
+      refreshUI();
+    }
+
+    function selectPoint(id) {
+      selectedId = id;
+      placeMode = false;
+      dragMode = false;
+      controls.enabled = true;
+      const sel = getSelected();
+      if (sel?.status === 'positioning') {
+        dragMode = true;
+      }
+      refreshUI();
+    }
+
+    function placePointOnSurface(worldPos) {
+      const sel = getSelected();
+      if (!sel || sel.status === 'done') return;
+
+      if (!sel.mesh) {
+        sel.mesh = createRpsMarker(0x3b82f6, 0x1d4ed8);
+        rpsGroup.add(sel.mesh);
+      }
+
+      sel.position = worldPos.clone();
+      sel.mesh.position.copy(worldPos);
+      sel.status = 'positioning';
+      placeMode = false;
+      dragMode = true;
+      controls.enabled = true;
+
+      showToast(`${sel.name} 已放置，请微调后确认坐标`);
+      refreshUI();
+    }
+
+    function confirmCoordinates() {
+      const sel = getSelected();
+      if (!sel || sel.status !== 'positioning' || !sel.position) return;
+
+      sel.status = 'done';
+      updateMarkerColor(sel);
+      placeMode = false;
+      dragMode = false;
+      controls.enabled = true;
+
+      showToast(`${sel.name} 坐标已确认: (${fmt(sel.position.x)}, ${fmt(sel.position.y)}, ${fmt(sel.position.z)})`);
+
+      // 自动选中下一个待定位点
+      const next = rpsPoints.find((p) => p.status === 'pending');
+      if (next) {
+        selectPoint(next.id);
+        placeMode = true;
+        controls.enabled = true;
+      } else {
+        const nextPos = rpsPoints.find((p) => p.status === 'positioning');
+        if (nextPos) selectPoint(nextPos.id);
+        else selectedId = sel.id;
+      }
+      refreshUI();
+    }
+
+    function deleteSelected() {
+      const sel = getSelected();
+      if (!sel) return;
+      if (sel.mesh) {
+        rpsGroup.remove(sel.mesh);
+        sel.mesh.geometry.dispose();
+        sel.mesh.material.dispose();
+      }
+      rpsPoints = rpsPoints.filter((p) => p.id !== sel.id);
+      selectedId = rpsPoints.length > 0 ? rpsPoints[rpsPoints.length - 1].id : null;
+      placeMode = false;
+      dragMode = false;
+      showToast(`已删除 ${sel.name}`);
+      refreshUI();
+    }
+
+    function setPositionFromInputs() {
+      const sel = getSelected();
+      if (!sel || sel.status !== 'positioning') return;
+      const x = parseFloat(inputX.value);
+      const y = parseFloat(inputY.value);
+      const z = parseFloat(inputZ.value);
+      if (isNaN(x) || isNaN(y) || isNaN(z)) return;
+      sel.position.set(x, y, z);
+      if (sel.mesh) sel.mesh.position.copy(sel.position);
+    }
+
+    // ─── 射线检测 ───
+    function getMouseNDC(event) {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    function raycastSurface() {
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(pickables, false);
+      return hits.length > 0 ? hits[0] : null;
+    }
+
+    function raycastDragPlane() {
+      raycaster.setFromCamera(mouse, camera);
+      return raycaster.ray.intersectPlane(dragPlane, intersectPoint) ? intersectPoint.clone() : null;
+    }
+
+    // ─── 事件绑定 ───
+    function onCreate() { createRpsPoint(); }
+
+    btnCreate.addEventListener('click', onCreate);
+    btnCreate2.addEventListener('click', onCreate);
+
+    btnPlaceMode.addEventListener('click', () => {
+      const sel = getSelected();
+      if (!sel || sel.status === 'done') return;
+      placeMode = !placeMode;
+      dragMode = false;
+      btnPlaceMode.classList.toggle('btn--active', placeMode);
+      btnDragMode.classList.remove('btn--active');
+      if (placeMode) {
+        showToast('请在模型表面点击以放置 RPS 点');
+        canvas.style.cursor = 'crosshair';
+      } else {
+        canvas.style.cursor = 'default';
+      }
+    });
+
+    btnDragMode.addEventListener('click', () => {
+      const sel = getSelected();
+      if (!sel || sel.status !== 'positioning') return;
+      dragMode = !dragMode;
+      placeMode = false;
+      btnDragMode.classList.toggle('btn--active', dragMode);
+      btnPlaceMode.classList.remove('btn--active');
+      canvas.style.cursor = dragMode ? 'grab' : 'default';
+    });
+
+    btnConfirm.addEventListener('click', confirmCoordinates);
+    btnDelete.addEventListener('click', deleteSelected);
+
+    [inputX, inputY, inputZ].forEach((input) => {
+      input.addEventListener('change', setPositionFromInputs);
+      input.addEventListener('input', setPositionFromInputs);
+    });
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      getMouseNDC(e);
+
+      if (placeMode) {
+        const hit = raycastSurface();
+        if (hit) {
+          // 略微抬高避免 z-fighting
+          const pos = hit.point.clone().add(hit.face.normal.clone().multiplyScalar(0.08));
+          placePointOnSurface(pos);
+          canvas.style.cursor = 'default';
+        }
+        return;
+      }
+
+      if (dragMode) {
+        const sel = getSelected();
+        if (!sel?.mesh || !sel.position) return;
+
+        // 检测是否点中了标记球
+        raycaster.setFromCamera(mouse, camera);
+        const markerHits = raycaster.intersectObject(sel.mesh, true);
+        if (markerHits.length > 0) {
+          isDragging = true;
+          controls.enabled = false;
+          canvas.style.cursor = 'grabbing';
+
+          const camDir = new THREE.Vector3();
+          camera.getWorldDirection(camDir);
+          dragPlane.setFromNormalAndCoplanarPoint(camDir.negate(), sel.position);
+          dragOffset.copy(sel.position).sub(raycastDragPlane() || sel.position);
+        }
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      getMouseNDC(e);
+      const sel = getSelected();
+      if (!sel) return;
+      const pt = raycastDragPlane();
+      if (pt) {
+        pt.add(dragOffset);
+        sel.position.copy(pt);
+        sel.mesh.position.copy(pt);
+        inputX.value = fmt(pt.x);
+        inputY.value = fmt(pt.y);
+        inputZ.value = fmt(pt.z);
+        renderModelTree();
+        renderRpsList();
+      }
+    });
+
+    canvas.addEventListener('pointerup', () => {
+      if (isDragging) {
+        isDragging = false;
+        controls.enabled = true;
+        canvas.style.cursor = dragMode ? 'grab' : 'default';
+      }
+    });
+
+    // ─── 渲染循环 ───
+    function resize() {
+      const wrap = canvas.parentElement;
+      const w = wrap.clientWidth;
+      const h = wrap.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+
+      // 定位中的点脉冲动画
+      const t = Date.now() * 0.003;
+      rpsPoints.forEach((p) => {
+        if (p.status === 'positioning' && p.mesh) {
+          const scale = 1 + Math.sin(t) * 0.15;
+          p.mesh.scale.setScalar(scale);
+        } else if (p.mesh) {
+          p.mesh.scale.setScalar(1);
+        }
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+    refreshUI();
+  </script>
+</body>
+</html>
