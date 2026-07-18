@@ -245,7 +245,7 @@ export const SKILL_DATA = {
     name: '穿透箭',
     type: 'projectile',
     desc: '自动射出可穿透多个敌人的箭矢。',
-    color: '#5cb8ff',
+    color: '#6b8f3c',
     isBasic: true,
     projectile: { speed: 680, radius: 8, life: 1.5, explode: false, pierce: 3 },
     levels: [
@@ -261,7 +261,7 @@ export const SKILL_DATA = {
     name: '多重射击',
     type: 'projectile',
     desc: '同时射出多支箭矢覆盖扇形区域。',
-    color: '#7ad0ff',
+    color: '#c9a45c',
     projectile: { speed: 640, radius: 7, life: 1.4, explode: false, pierce: 1 },
     levels: [
       { damage: 10, cooldown: 1.0, count: 3, pierce: 1 },
@@ -291,7 +291,7 @@ export const SKILL_DATA = {
     name: '冰冻箭',
     type: 'projectile',
     desc: '射出冰箭，命中减速敌人。',
-    color: '#9fe8ff',
+    color: '#8fdcff',
     projectile: { speed: 600, radius: 8, life: 1.5, explode: false, pierce: 2, slow: 0.45, slowDuration: 1.2 },
     levels: [
       { damage: 12, cooldown: 1.1, count: 1, pierce: 2 },
@@ -321,7 +321,7 @@ export const SKILL_DATA = {
     name: '连锁箭',
     type: 'chain',
     desc: '箭矢在敌人之间弹跳传导。',
-    color: '#6ad0ff',
+    color: '#8a6b3c',
     levels: [
       { damage: 16, cooldown: 1.6, jumps: 3, range: 200, falloff: 0.88 },
       { damage: 22, cooldown: 1.45, jumps: 4, range: 220, falloff: 0.88 },
@@ -335,7 +335,7 @@ export const SKILL_DATA = {
     name: '暴风箭雨',
     type: 'screen_barrage',
     desc: '终极：全屏降下无数箭矢，清扫战场。',
-    color: '#3aa0ff',
+    color: '#5a7030',
     isUltimate: true,
     levels: [
       { damage: 18, cooldown: 16, waves: 4, countPerWave: 12, radius: 420 },

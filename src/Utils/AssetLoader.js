@@ -38,13 +38,17 @@ export class AssetLoader {
     return this.images.get(relPath) || null;
   }
 
-  /** 角色精灵表 */
+  /** 角色精灵表（含可选立绘 portrait） */
   character(classId) {
     const meta = this.manifest.characters[classId];
     if (!meta) return null;
     const img = this.get(meta.file);
     if (!img) return null;
-    return { img, meta };
+    return {
+      img,
+      meta,
+      portrait: meta.portrait ? this.get(meta.portrait) : null,
+    };
   }
 
   /** 怪物立绘 / walk 条带 */
@@ -143,7 +147,10 @@ export class AssetLoader {
   collectPaths() {
     const paths = new Set();
     const m = this.manifest;
-    for (const id in m.characters) paths.add(m.characters[id].file);
+    for (const id in m.characters) {
+      paths.add(m.characters[id].file);
+      if (m.characters[id].portrait) paths.add(m.characters[id].portrait);
+    }
     for (const id in m.enemies) {
       const e = m.enemies[id];
       paths.add(e.file);

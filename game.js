@@ -225,6 +225,7 @@
     "characters": {
       "druid": {
         "file": "characters/druid.png",
+        "portrait": "characters/druid_portrait.png",
         "frameWidth": 96,
         "frameHeight": 96,
         "animations": {
@@ -252,6 +253,7 @@
       },
       "hunter": {
         "file": "characters/hunter.png",
+        "portrait": "characters/hunter_portrait.png",
         "frameWidth": 96,
         "frameHeight": 96,
         "animations": {
@@ -279,6 +281,7 @@
       },
       "mage": {
         "file": "characters/mage.png",
+        "portrait": "characters/mage_portrait.png",
         "frameWidth": 96,
         "frameHeight": 96,
         "animations": {
@@ -344,13 +347,78 @@
         "size": 64
       },
       {
+        "id": "natureStorm",
+        "file": "skills/icons/natureStorm.png",
+        "size": 64
+      },
+      {
+        "id": "vineBind",
+        "file": "skills/icons/vineBind.png",
+        "size": 64
+      },
+      {
+        "id": "poisonVines",
+        "file": "skills/icons/poisonVines.png",
+        "size": 64
+      },
+      {
+        "id": "bearSummon",
+        "file": "skills/icons/bearSummon.png",
+        "size": 64
+      },
+      {
+        "id": "thornsArmor",
+        "file": "skills/icons/thornsArmor.png",
+        "size": 64
+      },
+      {
+        "id": "ancientNature",
+        "file": "skills/icons/ancientNature.png",
+        "size": 64
+      },
+      {
         "id": "pierceArrow",
         "file": "skills/icons/pierceArrow.png",
         "size": 64
       },
       {
+        "id": "multiShot",
+        "file": "skills/icons/multiShot.png",
+        "size": 64
+      },
+      {
+        "id": "homingArrow",
+        "file": "skills/icons/homingArrow.png",
+        "size": 64
+      },
+      {
+        "id": "explodeArrow",
+        "file": "skills/icons/explodeArrow.png",
+        "size": 64
+      },
+      {
+        "id": "frostArrow",
+        "file": "skills/icons/frostArrow.png",
+        "size": 64
+      },
+      {
+        "id": "chainArrow",
+        "file": "skills/icons/chainArrow.png",
+        "size": 64
+      },
+      {
+        "id": "arrowStorm",
+        "file": "skills/icons/arrowStorm.png",
+        "size": 64
+      },
+      {
         "id": "mageFireball",
         "file": "skills/icons/mageFireball.png",
+        "size": 64
+      },
+      {
+        "id": "arcaneMissile",
+        "file": "skills/icons/arcaneMissile.png",
         "size": 64
       },
       {
@@ -371,16 +439,6 @@
       {
         "id": "blackHole",
         "file": "skills/icons/blackHole.png",
-        "size": 64
-      },
-      {
-        "id": "arrowStorm",
-        "file": "skills/icons/arrowStorm.png",
-        "size": 64
-      },
-      {
-        "id": "ancientNature",
-        "file": "skills/icons/ancientNature.png",
         "size": 64
       },
       {
@@ -521,13 +579,17 @@
     get(relPath) {
       return this.images.get(relPath) || null;
     }
-    /** 角色精灵表 */
+    /** 角色精灵表（含可选立绘 portrait） */
     character(classId) {
       const meta = this.manifest.characters[classId];
       if (!meta) return null;
       const img = this.get(meta.file);
       if (!img) return null;
-      return { img, meta };
+      return {
+        img,
+        meta,
+        portrait: meta.portrait ? this.get(meta.portrait) : null
+      };
     }
     /** 怪物立绘 / walk 条带 */
     enemy(enemyId) {
@@ -614,7 +676,10 @@
     collectPaths() {
       const paths = /* @__PURE__ */ new Set();
       const m = this.manifest;
-      for (const id in m.characters) paths.add(m.characters[id].file);
+      for (const id in m.characters) {
+        paths.add(m.characters[id].file);
+        if (m.characters[id].portrait) paths.add(m.characters[id].portrait);
+      }
       for (const id in m.enemies) {
         const e = m.enemies[id];
         paths.add(e.file);
@@ -1001,8 +1066,8 @@
         "tagline": "\u81EA\u7136\u4E4B\u6012\uFF0C\u7FA4\u72FC\u73AF\u4F3A",
         "model": "druid",
         "icon": "\u5FB7",
-        "color": "#6dbf4a",
-        "accent": "#2f6b28",
+        "color": "#6a9a3a",
+        "accent": "#3a5a28",
         "recommend": 4,
         "difficulty": 2,
         "playstyle": "\u53EC\u5524\u7269\u6D41\u6D3E \xB7 \u5766\u5EA6\u6700\u9AD8 \xB7 \u6302\u673A\u4F53\u9A8C\u6700\u597D",
@@ -1044,8 +1109,8 @@
         "tagline": "\u75BE\u98CE\u7BAD\u5F71\uFF0C\u767E\u6B65\u7A7F\u6768",
         "model": "hunter",
         "icon": "\u730E",
-        "color": "#5cb8ff",
-        "accent": "#1e4a78",
+        "color": "#6b8f3c",
+        "accent": "#3d2a1c",
         "recommend": 5,
         "difficulty": 3,
         "playstyle": "\u6781\u81F4\u5272\u8349 \xB7 Build\u53D8\u5316\u6700\u591A \xB7 \u8FFD\u6C42\u723D\u611F",
@@ -1087,8 +1152,8 @@
         "tagline": "\u5143\u7D20\u5171\u9E23\uFF0C\u672B\u65E5\u5929\u542F",
         "model": "mage",
         "icon": "\u6CD5",
-        "color": "#c47bff",
-        "accent": "#5a2088",
+        "color": "#9b5ce0",
+        "accent": "#3a1858",
         "recommend": 5,
         "difficulty": 3,
         "playstyle": "\u6E05\u5C4F\u6700\u5FEB \xB7 Build\u6700\u534E\u4E3D \xB7 \u540E\u671F\u6210\u957F\u6700\u9AD8",
@@ -1403,7 +1468,7 @@
       name: "\u7A7F\u900F\u7BAD",
       type: "projectile",
       desc: "\u81EA\u52A8\u5C04\u51FA\u53EF\u7A7F\u900F\u591A\u4E2A\u654C\u4EBA\u7684\u7BAD\u77E2\u3002",
-      color: "#5cb8ff",
+      color: "#6b8f3c",
       isBasic: true,
       projectile: { speed: 680, radius: 8, life: 1.5, explode: false, pierce: 3 },
       levels: [
@@ -1419,7 +1484,7 @@
       name: "\u591A\u91CD\u5C04\u51FB",
       type: "projectile",
       desc: "\u540C\u65F6\u5C04\u51FA\u591A\u652F\u7BAD\u77E2\u8986\u76D6\u6247\u5F62\u533A\u57DF\u3002",
-      color: "#7ad0ff",
+      color: "#c9a45c",
       projectile: { speed: 640, radius: 7, life: 1.4, explode: false, pierce: 1 },
       levels: [
         { damage: 10, cooldown: 1, count: 3, pierce: 1 },
@@ -1449,7 +1514,7 @@
       name: "\u51B0\u51BB\u7BAD",
       type: "projectile",
       desc: "\u5C04\u51FA\u51B0\u7BAD\uFF0C\u547D\u4E2D\u51CF\u901F\u654C\u4EBA\u3002",
-      color: "#9fe8ff",
+      color: "#8fdcff",
       projectile: { speed: 600, radius: 8, life: 1.5, explode: false, pierce: 2, slow: 0.45, slowDuration: 1.2 },
       levels: [
         { damage: 12, cooldown: 1.1, count: 1, pierce: 2 },
@@ -1479,7 +1544,7 @@
       name: "\u8FDE\u9501\u7BAD",
       type: "chain",
       desc: "\u7BAD\u77E2\u5728\u654C\u4EBA\u4E4B\u95F4\u5F39\u8DF3\u4F20\u5BFC\u3002",
-      color: "#6ad0ff",
+      color: "#8a6b3c",
       levels: [
         { damage: 16, cooldown: 1.6, jumps: 3, range: 200, falloff: 0.88 },
         { damage: 22, cooldown: 1.45, jumps: 4, range: 220, falloff: 0.88 },
@@ -1493,7 +1558,7 @@
       name: "\u66B4\u98CE\u7BAD\u96E8",
       type: "screen_barrage",
       desc: "\u7EC8\u6781\uFF1A\u5168\u5C4F\u964D\u4E0B\u65E0\u6570\u7BAD\u77E2\uFF0C\u6E05\u626B\u6218\u573A\u3002",
-      color: "#3aa0ff",
+      color: "#5a7030",
       isUltimate: true,
       levels: [
         { damage: 18, cooldown: 16, waves: 4, countPerWave: 12, radius: 420 },
@@ -1858,6 +1923,13 @@
       ctx.save();
       ctx.translate(0, bob);
       const sheet = AssetLoader_default.character(char.id);
+      if (sheet && sheet.portrait) {
+        const pulse = 1 + Math.sin(time * 2) * 0.02;
+        const size = 168 * pulse;
+        ctx.drawImage(sheet.portrait, -size / 2, -size / 2 + 8, size, size);
+        ctx.restore();
+        return;
+      }
       if (sheet && sheet.img) {
         const anim = sheet.meta.animations.idle || sheet.meta.animations.walk;
         const frame = Math.floor(time * (anim.fps || 6)) % anim.frames;
@@ -2940,7 +3012,7 @@
         ctx.fillStyle = color;
         ctx.fill();
       } else if (model === "hunter") {
-        ctx.fillStyle = flashing ? "#fff" : this.classData.accent || "#1e4a78";
+        ctx.fillStyle = flashing ? "#fff" : this.classData.accent || "#3d2a1c";
         ctx.beginPath();
         ctx.moveTo(0, r * 0.5);
         ctx.lineTo(-r * 0.75, r * 1.1);
@@ -2952,7 +3024,7 @@
         ctx.fillStyle = color;
         ctx.fill();
       } else {
-        ctx.fillStyle = flashing ? "#fff" : this.classData.accent || "#5a2088";
+        ctx.fillStyle = flashing ? "#fff" : this.classData.accent || "#3a1858";
         ctx.beginPath();
         ctx.moveTo(0, -r * 0.9);
         ctx.lineTo(-r * 0.8, r * 1.1);
@@ -4897,7 +4969,7 @@
       const s = this.pool.acquire();
       s.spawn(cfg);
       this.summons.push(s);
-      this.effects.puff(cfg.x, cfg.y, "#6dbf4a");
+      this.effects.puff(cfg.x, cfg.y, "#6a9a3a");
       return s;
     }
     update(dt) {

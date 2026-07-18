@@ -30,7 +30,7 @@ export class SummonSystem {
     const s = this.pool.acquire();
     s.spawn(cfg);
     this.summons.push(s);
-    this.effects.puff(cfg.x, cfg.y, '#6dbf4a');
+    this.effects.puff(cfg.x, cfg.y, '#6a9a3a');
     return s;
   }
 

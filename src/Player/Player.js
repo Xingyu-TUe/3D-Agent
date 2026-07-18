@@ -204,7 +204,7 @@ export class Player {
       ctx.fillStyle = color;
       ctx.fill();
     } else if (model === 'hunter') {
-      ctx.fillStyle = flashing ? '#fff' : (this.classData.accent || '#1e4a78');
+      ctx.fillStyle = flashing ? '#fff' : (this.classData.accent || '#3d2a1c');
       ctx.beginPath();
       ctx.moveTo(0, r * 0.5);
       ctx.lineTo(-r * 0.75, r * 1.1);
@@ -216,7 +216,7 @@ export class Player {
       ctx.fillStyle = color;
       ctx.fill();
     } else {
-      ctx.fillStyle = flashing ? '#fff' : (this.classData.accent || '#5a2088');
+      ctx.fillStyle = flashing ? '#fff' : (this.classData.accent || '#3a1858');
       ctx.beginPath();
       ctx.moveTo(0, -r * 0.9);
       ctx.lineTo(-r * 0.8, r * 1.1);

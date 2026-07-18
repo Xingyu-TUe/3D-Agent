@@ -265,6 +265,14 @@ export class CharacterSelectUI {
     ctx.translate(0, bob);
 
     const sheet = Assets.character(char.id);
+    // 优先概念立绘，其次 Idle 精灵帧
+    if (sheet && sheet.portrait) {
+      const pulse = 1 + Math.sin(time * 2) * 0.02;
+      const size = 168 * pulse;
+      ctx.drawImage(sheet.portrait, -size / 2, -size / 2 + 8, size, size);
+      ctx.restore();
+      return;
+    }
     if (sheet && sheet.img) {
       const anim = sheet.meta.animations.idle || sheet.meta.animations.walk;
       const frame = Math.floor(time * (anim.fps || 6)) % anim.frames;

@@ -1,4 +1,4 @@
-/** Auto from manifest.json */
+/** Auto from manifest.json — do not edit by hand */
 export default {
   "name": "Hell Rift Asset Pack",
   "version": "1.1.0",
@@ -17,6 +17,7 @@ export default {
   "characters": {
     "druid": {
       "file": "characters/druid.png",
+      "portrait": "characters/druid_portrait.png",
       "frameWidth": 96,
       "frameHeight": 96,
       "animations": {
@@ -44,6 +45,7 @@ export default {
     },
     "hunter": {
       "file": "characters/hunter.png",
+      "portrait": "characters/hunter_portrait.png",
       "frameWidth": 96,
       "frameHeight": 96,
       "animations": {
@@ -71,6 +73,7 @@ export default {
     },
     "mage": {
       "file": "characters/mage.png",
+      "portrait": "characters/mage_portrait.png",
       "frameWidth": 96,
       "frameHeight": 96,
       "animations": {
@@ -136,13 +139,78 @@ export default {
       "size": 64
     },
     {
+      "id": "natureStorm",
+      "file": "skills/icons/natureStorm.png",
+      "size": 64
+    },
+    {
+      "id": "vineBind",
+      "file": "skills/icons/vineBind.png",
+      "size": 64
+    },
+    {
+      "id": "poisonVines",
+      "file": "skills/icons/poisonVines.png",
+      "size": 64
+    },
+    {
+      "id": "bearSummon",
+      "file": "skills/icons/bearSummon.png",
+      "size": 64
+    },
+    {
+      "id": "thornsArmor",
+      "file": "skills/icons/thornsArmor.png",
+      "size": 64
+    },
+    {
+      "id": "ancientNature",
+      "file": "skills/icons/ancientNature.png",
+      "size": 64
+    },
+    {
       "id": "pierceArrow",
       "file": "skills/icons/pierceArrow.png",
       "size": 64
     },
     {
+      "id": "multiShot",
+      "file": "skills/icons/multiShot.png",
+      "size": 64
+    },
+    {
+      "id": "homingArrow",
+      "file": "skills/icons/homingArrow.png",
+      "size": 64
+    },
+    {
+      "id": "explodeArrow",
+      "file": "skills/icons/explodeArrow.png",
+      "size": 64
+    },
+    {
+      "id": "frostArrow",
+      "file": "skills/icons/frostArrow.png",
+      "size": 64
+    },
+    {
+      "id": "chainArrow",
+      "file": "skills/icons/chainArrow.png",
+      "size": 64
+    },
+    {
+      "id": "arrowStorm",
+      "file": "skills/icons/arrowStorm.png",
+      "size": 64
+    },
+    {
       "id": "mageFireball",
       "file": "skills/icons/mageFireball.png",
+      "size": 64
+    },
+    {
+      "id": "arcaneMissile",
+      "file": "skills/icons/arcaneMissile.png",
       "size": 64
     },
     {
@@ -163,16 +231,6 @@ export default {
     {
       "id": "blackHole",
       "file": "skills/icons/blackHole.png",
-      "size": 64
-    },
-    {
-      "id": "arrowStorm",
-      "file": "skills/icons/arrowStorm.png",
-      "size": 64
-    },
-    {
-      "id": "ancientNature",
-      "file": "skills/icons/ancientNature.png",
       "size": 64
     },
     {

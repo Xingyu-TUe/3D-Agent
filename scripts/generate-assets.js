@@ -27,15 +27,24 @@ const P = {
   lavaCore: [255, 220, 100, 255],
   gold: [255, 205, 70, 255],
   goldDim: [170, 120, 35, 255],
-  druid: [100, 180, 70, 255],
-  druidDim: [40, 90, 38, 255],
-  druidHi: [160, 230, 110, 255],
-  hunter: [80, 170, 240, 255],
-  hunterDim: [25, 60, 110, 255],
-  hunterHi: [160, 220, 255, 255],
-  mage: [180, 100, 240, 255],
-  mageDim: [70, 25, 120, 255],
-  mageHi: [230, 180, 255, 255],
+  // 概念设定板：德鲁伊 = 森林绿/褐；猎人 = 橄榄皮甲（非青蓝）；法师 = 深紫/金
+  druid: [100, 150, 58, 255],
+  druidDim: [42, 72, 32, 255],
+  druidHi: [168, 214, 96, 255],
+  druidBark: [92, 62, 36, 255],
+  druidFur: [120, 96, 70, 255],
+  hunter: [78, 104, 52, 255],
+  hunterDim: [36, 42, 28, 255],
+  hunterHi: [140, 168, 88, 255],
+  hunterLeather: [92, 58, 36, 255],
+  hunterMetal: [110, 108, 100, 255],
+  mage: [132, 72, 196, 255],
+  mageDim: [42, 22, 72, 255],
+  mageHi: [210, 160, 255, 255],
+  mageRobe: [58, 28, 96, 255],
+  mageGold: [201, 164, 92, 255],
+  ice: [140, 200, 230, 255],
+  iceHi: [220, 245, 255, 255],
   ghoul: [110, 160, 90, 255],
   hound: [180, 55, 40, 255],
   dem: [120, 60, 190, 255],
@@ -154,115 +163,258 @@ function blit(src, dx, dy, dst) {
   }
 }
 
-// ==================== 角色 96 帧表 ====================
+// ==================== 角色 96 帧表（对齐概念设定板） ====================
 const CF = 96;
 const ANIMS = ['idle', 'walk', 'attack', 'death'];
 
-function drawHero(png, ox, oy, cls, anim, frame) {
+function drawDeadHero(png, cx, cy, robe, accent) {
+  ell(png, cx, cy + 12, 28, 11, robe);
+  circ(png, cx - 10, cy + 4, 10, accent);
+  circ(png, cx + 12, cy + 8, 8, P.boneDim);
+  for (let i = 0; i < 5; i++) circ(png, cx - 18 + i * 9, cy + 6, 2, P.blood);
+}
+
+/** 德鲁伊：鹿角老者 + 绿袍毛皮 + 藤杖绿核 + 侧伴狼影 */
+function drawDruidHero(png, ox, oy, anim, frame) {
   const cx = ox + 48;
   const cy = oy + 50;
   const bob = anim === 'walk' ? Math.sin(frame * 1.4) * 3 : anim === 'idle' ? Math.sin(frame * 0.8) * 1.2 : 0;
   const atk = anim === 'attack';
   const dead = anim === 'death';
-
-  const pal = {
-    druid: { m: P.druid, d: P.druidDim, h: P.druidHi },
-    hunter: { m: P.hunter, d: P.hunterDim, h: P.hunterHi },
-    mage: { m: P.mage, d: P.mageDim, h: P.mageHi },
-  }[cls];
-
-  // 脚底阴影
-  ell(png, cx, oy + 86, 20, 7, P.shadow);
-
+  ell(png, cx, oy + 86, 22, 7, P.shadow);
   if (dead && frame >= 2) {
-    ell(png, cx, cy + 12, 26, 10, pal.d);
-    circ(png, cx - 8, cy + 6, 9, pal.m);
-    circ(png, cx + 10, cy + 8, 7, P.boneDim);
-    if (frame >= 3) {
-      for (let i = 0; i < 6; i++) circ(png, cx - 20 + i * 8, cy + 4, 2, P.blood);
-    }
+    drawDeadHero(png, cx, cy, P.druidDim, P.druid);
     return;
   }
-
   const by = cy + bob;
-  const lean = atk ? frame * 2 : 0;
+  const lean = atk ? frame * 2.2 : 0;
 
-  // 披风（哥特多层）
-  ell(png, cx + lean * 0.3, by + 14, 20, 24, pal.d);
-  ell(png, cx + lean * 0.3, by + 10, 15, 18, [pal.d[0] + 15, pal.d[1] + 10, pal.d[2] + 15, 255]);
-  // 肩甲
-  circ(png, cx - 12, by - 2, 7, P.ash);
-  circ(png, cx + 12, by - 2, 7, P.ash);
-  circ(png, cx - 12, by - 2, 4, P.stoneHi);
-  circ(png, cx + 12, by - 2, 4, P.stoneHi);
-  // 躯干
-  circ(png, cx, by, 13, pal.m);
-  circ(png, cx - 3, by - 3, 5, pal.h);
-  // 腰带
-  rect(png, cx - 10, by + 8, 20, 3, P.goldDim);
-  put(png, cx, by + 9, P.gold);
+  // 绿叶披风
+  ell(png, cx + lean * 0.2, by + 16, 22, 26, P.druidDim);
+  ell(png, cx + lean * 0.2, by + 12, 16, 20, P.druid);
+  // 毛皮肩甲
+  circ(png, cx - 14, by - 2, 9, P.druidFur);
+  circ(png, cx + 14, by - 2, 9, P.druidFur);
+  circ(png, cx - 14, by - 4, 4, P.boneDim);
+  circ(png, cx + 14, by - 4, 4, P.boneDim);
+  // 躯干皮甲
+  circ(png, cx, by + 2, 14, P.druidBark);
+  circ(png, cx - 2, by - 2, 6, P.druidHi);
+  rect(png, cx - 11, by + 10, 22, 3, P.goldDim);
 
-  // 头 / 兜帽
-  circ(png, cx, by - 20, 12, P.bone);
-  circ(png, cx, by - 22, 13, pal.d); // 兜帽
-  circ(png, cx, by - 18, 9, P.bone);
-  // 发光眼缝
-  rect(png, cx - 6, by - 20, 5, 2, P.eye);
-  rect(png, cx + 2, by - 20, 5, 2, P.eye);
-  // 血红面纹
-  line(png, cx - 3, by - 14, cx + 3, by - 14, P.blood, 1);
+  // 头：胡须老者
+  circ(png, cx, by - 18, 12, [210, 185, 155, 255]);
+  circ(png, cx, by - 12, 7, [190, 170, 140, 255]); // 须
+  rect(png, cx - 5, by - 20, 3, 2, P.ink);
+  rect(png, cx + 3, by - 20, 3, 2, P.ink);
+  // 巨角（肩上鹿角）
+  line(png, cx - 10, by - 26, cx - 22, by - 46, P.boneDim, 4);
+  line(png, cx - 22, by - 46, cx - 14, by - 52, P.bone, 3);
+  line(png, cx - 18, by - 40, cx - 26, by - 44, P.bone, 2);
+  line(png, cx + 10, by - 26, cx + 22, by - 46, P.boneDim, 4);
+  line(png, cx + 22, by - 46, cx + 14, by - 52, P.bone, 3);
+  line(png, cx + 18, by - 40, cx + 26, by - 44, P.bone, 2);
+  // 叶冠
+  circ(png, cx - 8, by - 28, 3, P.druid);
+  circ(png, cx + 8, by - 28, 3, P.druidHi);
 
-  if (cls === 'druid') {
-    // 骨角
-    line(png, cx - 7, by - 28, cx - 16, by - 42, P.boneDim, 3);
-    line(png, cx - 16, by - 42, cx - 10, by - 46, P.bone, 2);
-    line(png, cx + 7, by - 28, cx + 16, by - 42, P.boneDim, 3);
-    line(png, cx + 16, by - 42, cx + 10, by - 46, P.bone, 2);
-    // 藤蔓法杖
-    const sx = cx + 22 + (atk ? frame * 4 : 0);
-    line(png, sx, by + 22, sx - 2, by - 34, P.boneDim, 3);
-    circ(png, sx - 2, by - 38, 7, pal.d);
-    circ(png, sx - 2, by - 38, 4, pal.h);
-    // 绿叶装饰
-    circ(png, sx + 4, by - 32, 3, pal.m);
-  } else if (cls === 'hunter') {
-    // 斗篷尖角
-    line(png, cx - 16, by + 8, cx - 22, by + 28, pal.d, 3);
-    // 长弓
-    const bx0 = cx + 20 + (atk ? -frame : 0);
-    line(png, bx0, by - 30, bx0, by + 22, P.boneDim, 2);
-    line(png, bx0, by - 30, bx0 + 12, by - 4, pal.h, 2);
-    line(png, bx0, by + 22, bx0 + 12, by - 4, pal.h, 2);
-    line(png, bx0 + 1, by - 4, bx0 + 10, by - 4, P.bone, 1);
-    if (atk) {
-      line(png, bx0 + 8, by - 4, bx0 + 28 + frame * 8, by - 4 - frame, pal.m, 2);
-      circ(png, bx0 + 28 + frame * 8, by - 4 - frame, 2, P.gold);
-    }
-    // 箭袋
-    rect(png, cx - 18, by + 4, 6, 14, P.ash);
-  } else {
-    // 尖顶兜帽
-    line(png, cx - 10, by - 28, cx, by - 44, pal.d, 4);
-    line(png, cx + 10, by - 28, cx, by - 44, pal.d, 4);
-    circ(png, cx, by - 44, 3, pal.m);
-    // 法杖
-    const sx = cx + 20 + (atk ? frame * 2 : 0);
-    line(png, sx, by + 24, sx + 2, by - 36, pal.m, 3);
-    const orb = 6 + (atk ? frame * 2 : 0);
-    circ(png, sx + 2, by - 42, orb + 2, P.lava);
-    circ(png, sx + 2, by - 42, orb, P.lavaCore);
-    if (atk && frame >= 2) {
-      circ(png, sx + 18, by - 20, 5, P.lava);
+  // 藤蔓法杖 + 绿核
+  const sx = cx + 24 + (atk ? frame * 3 : 0);
+  const staffTop = by - 40 - (atk ? frame * 2 : 0);
+  line(png, sx, by + 24, sx - 3, staffTop, P.druidBark, 4);
+  circ(png, sx - 3, staffTop - 4, 9, P.druidDim);
+  circ(png, sx - 3, staffTop - 4, 5, P.druidHi);
+  if (atk) circRing(png, sx - 3, staffTop - 4, 12 + frame * 2, P.druidHi, 1);
+  // 地面绿纹（攻击）
+  if (atk && frame >= 2) {
+    circRing(png, cx, by + 28, 10 + frame * 4, [80, 180, 70, 120], 2);
+  }
+
+  // 侧伴狼影（idle/walk）
+  if (!atk) {
+    const wx = cx - 28;
+    const wy = by + 18 + Math.sin(frame) * 1.5;
+    ell(png, wx, wy, 12, 7, [90, 95, 105, 200]);
+    circ(png, wx + 10, wy - 4, 6, [100, 105, 115, 200]);
+    circ(png, wx + 12, wy - 5, 1, P.druidHi);
+  }
+
+  const step = anim === 'walk' ? Math.sin(frame * 1.6) * 5 : 0;
+  rect(png, cx - 9, by + 20, 7, 14 + step, P.druidBark);
+  rect(png, cx + 3, by + 20, 7, 14 - step, P.druidBark);
+  rect(png, cx - 10, by + 32 + step, 9, 5, P.ink);
+  rect(png, cx + 2, by + 32 - step, 9, 5, P.ink);
+}
+
+/** 猎人：兜帽面罩 + 橄榄皮甲 + 反曲弓 + 箭袋 */
+function drawHunterHero(png, ox, oy, anim, frame) {
+  const cx = ox + 48;
+  const cy = oy + 50;
+  const bob = anim === 'walk' ? Math.sin(frame * 1.5) * 2.5 : anim === 'idle' ? Math.sin(frame * 0.7) * 1 : 0;
+  const atk = anim === 'attack';
+  const dead = anim === 'death';
+  ell(png, cx, oy + 86, 20, 7, P.shadow);
+  if (dead && frame >= 2) {
+    drawDeadHero(png, cx, cy, P.hunterDim, P.hunterLeather);
+    return;
+  }
+  const by = cy + bob;
+
+  // 深色斗篷
+  ell(png, cx - 2, by + 14, 18, 24, P.hunterDim);
+  ell(png, cx, by + 10, 13, 18, P.hunter);
+  // 皮甲躯干 + 金属扣
+  circ(png, cx, by, 13, P.hunterLeather);
+  circ(png, cx - 3, by - 4, 5, P.hunterHi);
+  rect(png, cx - 10, by + 8, 20, 3, P.hunterMetal);
+  put(png, cx, by + 9, P.goldDim);
+  // 肩甲金属片
+  circ(png, cx - 13, by - 4, 6, P.hunterMetal);
+  circ(png, cx + 11, by - 4, 6, P.hunterMetal);
+
+  // 兜帽 + 面罩
+  circ(png, cx, by - 20, 13, P.hunterDim);
+  circ(png, cx, by - 17, 9, [40, 36, 32, 255]);
+  rect(png, cx - 7, by - 19, 14, 3, P.ink); // 眼缝
+  rect(png, cx - 5, by - 19, 4, 2, P.hunterHi);
+  rect(png, cx + 2, by - 19, 4, 2, P.hunterHi);
+  // 兜帽尖
+  line(png, cx - 10, by - 28, cx, by - 38, P.hunterDim, 3);
+  line(png, cx + 10, by - 28, cx, by - 38, P.hunterDim, 3);
+
+  // 箭袋
+  rect(png, cx - 20, by + 2, 7, 16, P.hunterLeather);
+  line(png, cx - 18, by + 2, cx - 18, by - 6, P.hunterHi, 1);
+  line(png, cx - 16, by + 2, cx - 16, by - 8, P.goldDim, 1);
+
+  // 反曲弓
+  const bx0 = cx + 18 + (atk ? -frame * 2 : 0);
+  line(png, bx0, by - 28, bx0 + 2, by + 20, P.hunterLeather, 3);
+  line(png, bx0, by - 28, bx0 + 14, by - 2, P.hunterMetal, 2);
+  line(png, bx0 + 2, by + 20, bx0 + 14, by - 2, P.hunterMetal, 2);
+  line(png, bx0 + 2, by - 2, bx0 + 12, by - 2, P.bone, 1);
+  if (atk) {
+    const ax = bx0 + 16 + frame * 10;
+    const ay = by - 4 - frame * 2;
+    line(png, bx0 + 8, by - 2, ax, ay, P.hunterHi, 2);
+    circ(png, ax, ay, 3, P.gold);
+    // 羽
+    line(png, bx0 + 10, by - 2, bx0 + 6, by - 6, P.druid, 1);
+  }
+
+  const step = anim === 'walk' ? Math.sin(frame * 1.7) * 5 : 0;
+  rect(png, cx - 8, by + 18, 6, 14 + step, P.hunterDim);
+  rect(png, cx + 3, by + 18, 6, 14 - step, P.hunterDim);
+  rect(png, cx - 9, by + 30 + step, 8, 4, P.ink);
+  rect(png, cx + 2, by + 30 - step, 8, 4, P.ink);
+}
+
+/** 法师：紫黑金纹长袍 + 水晶法杖 + 手持奥术球 */
+function drawMageHero(png, ox, oy, anim, frame) {
+  const cx = ox + 48;
+  const cy = oy + 50;
+  const bob = anim === 'walk' ? Math.sin(frame * 1.2) * 2 : anim === 'idle' ? Math.sin(frame * 0.9) * 1.5 : 0;
+  const atk = anim === 'attack';
+  const dead = anim === 'death';
+  ell(png, cx, oy + 86, 22, 7, P.shadow);
+  if (dead && frame >= 2) {
+    drawDeadHero(png, cx, cy, P.mageDim, P.mage);
+    return;
+  }
+  const by = cy + bob - (atk ? 2 : 0);
+  const floatY = atk ? -frame : 0;
+
+  // 多层长袍
+  ell(png, cx, by + 18 + floatY, 20, 28, P.mageDim);
+  ell(png, cx, by + 12 + floatY, 15, 22, P.mageRobe);
+  // 金纹肩饰
+  line(png, cx - 12, by - 2 + floatY, cx - 18, by + 16 + floatY, P.mageGold, 2);
+  line(png, cx + 12, by - 2 + floatY, cx + 18, by + 16 + floatY, P.mageGold, 2);
+  circ(png, cx - 12, by - 4 + floatY, 6, P.mageGold);
+  circ(png, cx + 12, by - 4 + floatY, 6, P.mageGold);
+  // 胸前金饰
+  circ(png, cx, by + 4 + floatY, 4, P.mageGold);
+  circ(png, cx, by + 4 + floatY, 2, P.mageHi);
+
+  // 长发 + 面容
+  circ(png, cx, by - 16 + floatY, 11, [40, 28, 48, 255]);
+  circ(png, cx, by - 18 + floatY, 9, [210, 175, 160, 255]);
+  // 长发披落
+  ell(png, cx - 10, by - 6 + floatY, 5, 14, [30, 20, 40, 255]);
+  ell(png, cx + 10, by - 6 + floatY, 5, 14, [30, 20, 40, 255]);
+  rect(png, cx - 4, by - 20 + floatY, 2, 2, P.mageHi);
+  rect(png, cx + 3, by - 20 + floatY, 2, 2, P.mageHi);
+
+  // 水晶法杖
+  const sx = cx + 22 + (atk ? frame : 0);
+  line(png, sx, by + 26 + floatY, sx + 1, by - 36 + floatY, P.mageGold, 3);
+  const orb = 7 + (atk ? frame : 0);
+  circ(png, sx + 1, by - 42 + floatY, orb + 2, P.mage);
+  circ(png, sx + 1, by - 42 + floatY, orb, P.mageHi);
+  circ(png, sx - 1, by - 44 + floatY, 3, P.white);
+
+  // 左手奥术球
+  const hx = cx - 18 - (atk ? frame * 2 : 0);
+  const hy = by + 2 + floatY;
+  circ(png, hx, hy, 8 + (atk ? frame : 0), [100, 50, 180, 180]);
+  circ(png, hx, hy, 4, P.mageHi);
+  if (atk && frame >= 2) {
+    for (let i = 0; i < 4; i++) {
+      const a = frame + i;
+      circ(png, hx + Math.cos(a) * 14, hy + Math.sin(a) * 14, 2, P.mageHi);
     }
   }
 
-  // 腿
-  const step = anim === 'walk' ? Math.sin(frame * 1.6) * 5 : 0;
-  rect(png, cx - 9, by + 20, 6, 14 + step, pal.d);
-  rect(png, cx + 3, by + 20, 6, 14 - step, pal.d);
-  // 靴
-  rect(png, cx - 10, by + 32 + step, 8, 4, P.ink);
-  rect(png, cx + 2, by + 32 - step, 8, 4, P.ink);
+  const step = anim === 'walk' ? Math.sin(frame * 1.4) * 3 : 0;
+  // 袍摆遮腿，只露靴尖
+  rect(png, cx - 8, by + 30 + step + floatY, 6, 4, P.ink);
+  rect(png, cx + 3, by + 30 - step + floatY, 6, 4, P.ink);
+}
+
+function drawHero(png, ox, oy, cls, anim, frame) {
+  if (cls === 'druid') drawDruidHero(png, ox, oy, anim, frame);
+  else if (cls === 'hunter') drawHunterHero(png, ox, oy, anim, frame);
+  else drawMageHero(png, ox, oy, anim, frame);
+}
+
+/** 选角用大立绘（对齐概念图全身像气质） */
+function drawPortrait(cls) {
+  const S = 160;
+  const p = create(S, S);
+  // 暗底光晕
+  const glow = cls === 'druid' ? P.druid : cls === 'hunter' ? P.hunter : P.mage;
+  for (let r = 70; r > 10; r -= 4) {
+    const a = Math.max(20, 90 - r);
+    circ(p, 80, 100, r, [glow[0], glow[1], glow[2], a]);
+  }
+  // 放大绘制一帧 idle
+  const tmp = create(CF, CF);
+  drawHero(tmp, 0, 0, cls, 'idle', 1);
+  // 居中放大约 1.5x 手工 blit scale
+  for (let y = 0; y < CF; y++) {
+    for (let x = 0; x < CF; x++) {
+      const si = (CF * y + x) << 2;
+      if (tmp.data[si + 3] < 10) continue;
+      const dx = 32 + ((x * 1.5) | 0);
+      const dy = 20 + ((y * 1.5) | 0);
+      for (let oy = 0; oy < 2; oy++) {
+        for (let ox = 0; ox < 2; ox++) {
+          put(p, dx + ox, dy + oy, [tmp.data[si], tmp.data[si + 1], tmp.data[si + 2], tmp.data[si + 3]]);
+        }
+      }
+    }
+  }
+  // 职业色金边框角
+  const edge = cls === 'mage' ? P.mageGold : P.goldDim;
+  line(p, 8, 8, 28, 8, edge, 2);
+  line(p, 8, 8, 8, 28, edge, 2);
+  line(p, S - 8, 8, S - 28, 8, edge, 2);
+  line(p, S - 8, 8, S - 8, 28, edge, 2);
+  line(p, 8, S - 8, 28, S - 8, edge, 2);
+  line(p, 8, S - 8, 8, S - 28, edge, 2);
+  line(p, S - 8, S - 8, S - 28, S - 8, edge, 2);
+  line(p, S - 8, S - 8, S - 8, S - 28, edge, 2);
+  return p;
 }
 
 function genCharacters() {
@@ -273,8 +425,11 @@ function genCharacters() {
       for (let c = 0; c < 4; c++) drawHero(sheet, c * CF, r * CF, cls, ANIMS[r], c);
     }
     save(sheet, `characters/${cls}.png`);
+    const portrait = drawPortrait(cls);
+    save(portrait, `characters/${cls}_portrait.png`);
     meta[cls] = {
       file: `characters/${cls}.png`,
+      portrait: `characters/${cls}_portrait.png`,
       frameWidth: CF,
       frameHeight: CF,
       animations: {
@@ -414,93 +569,173 @@ function genBoss() {
   return { file: 'enemies/riftLord.png', idle: 'enemies/riftLord_idle.png', size: S };
 }
 
-// ==================== 技能图标 ====================
+// ==================== 技能图标（对齐概念板：爪印/藤蔓/熊/古树 · 箭矢/散射/印记 · 奥术/冰/雷/陨/洞） ====================
+function iconPlate(p, accent) {
+  circ(p, 32, 32, 30, [14, 10, 16, 250]);
+  circRing(p, 32, 32, 30, accent || P.blood, 2);
+  circRing(p, 32, 32, 27, P.goldDim, 1);
+}
+
 function genIcons() {
   const list = [];
   const specs = [
-    ['wolfSummon', (p) => {
-      ell(p, 36, 38, 15, 9, P.boneDim);
-      circ(p, 46, 30, 9, P.bone);
-      circ(p, 49, 28, 2, P.druidHi);
-      circ(p, 42, 28, 2, P.ink);
-      // 月牙
-      circRing(p, 20, 20, 8, P.druid, 2);
-    }],
-    ['pierceArrow', (p) => {
-      line(p, 12, 50, 50, 14, P.hunter, 3);
-      circ(p, 50, 14, 4, P.gold);
-      line(p, 14, 48, 8, 54, P.bone, 2);
-      line(p, 14, 48, 8, 42, P.bone, 2);
-    }],
-    ['mageFireball', (p) => {
-      circ(p, 32, 32, 16, P.lava);
-      circ(p, 32, 32, 10, P.lavaCore);
-      circ(p, 28, 28, 4, P.white);
+    // —— 德鲁伊 ——
+    ['wolfSummon', (p) => { // 狼爪印
+      circ(p, 32, 34, 10, P.druidDim);
+      circ(p, 32, 36, 6, P.druid);
+      for (const [x, y] of [[22, 22], [28, 16], [36, 16], [42, 22]]) {
+        ell(p, x, y, 4, 5, P.druidHi);
+      }
+    }, P.druid],
+    ['natureStorm', (p) => { // 自然漩涡
+      for (let i = 0; i < 3; i++) circRing(p, 32, 32, 10 + i * 6, i % 2 ? P.druidHi : P.druid, 2);
+      circ(p, 32, 32, 5, P.druidHi);
+    }, P.druid],
+    ['vineBind', (p) => { // 荆棘根须
       for (let i = 0; i < 5; i++) {
-        const a = i * 1.1;
-        circ(p, 32 + Math.cos(a) * 20, 32 + Math.sin(a) * 20, 3, P.lava);
+        const x = 14 + i * 9;
+        line(p, x, 52, x + (i % 2 ? 4 : -4), 16, P.druidBark, 3);
+        circ(p, x + (i % 2 ? 4 : -4), 14, 3, P.druid);
       }
-    }],
-    ['frostRing', (p) => {
-      circRing(p, 32, 32, 18, P.hunterHi, 3);
-      circRing(p, 32, 32, 12, P.hunter, 2);
+    }, P.druid],
+    ['poisonVines', (p) => {
+      line(p, 16, 48, 32, 18, P.druid, 3);
+      line(p, 32, 18, 48, 48, P.druidDim, 3);
+      circ(p, 32, 20, 6, P.druidHi);
+      circ(p, 24, 36, 3, [120, 220, 80, 255]);
+      circ(p, 40, 36, 3, [120, 220, 80, 255]);
+    }, P.druid],
+    ['bearSummon', (p) => { // 熊首
+      ell(p, 32, 34, 16, 14, P.druidBark);
+      circ(p, 18, 22, 7, P.druidFur);
+      circ(p, 46, 22, 7, P.druidFur);
+      circ(p, 26, 32, 3, P.ink);
+      circ(p, 38, 32, 3, P.ink);
+      ell(p, 32, 42, 6, 4, P.ink);
+    }, P.druid],
+    ['thornsArmor', (p) => {
+      circ(p, 32, 34, 14, P.druidDim);
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        line(p, 32 + Math.cos(a) * 12, 34 + Math.sin(a) * 12, 32 + Math.cos(a) * 22, 34 + Math.sin(a) * 22, P.druidHi, 2);
+      }
+    }, P.druid],
+    ['ancientNature', (p) => { // 远古绿树
+      rect(p, 28, 34, 8, 18, P.druidBark);
+      circ(p, 32, 24, 16, P.druidDim);
+      circ(p, 32, 22, 10, P.druid);
+      circ(p, 22, 20, 6, P.druidHi);
+      circ(p, 42, 18, 7, P.druidHi);
+      circ(p, 32, 14, 5, [200, 240, 120, 255]);
+    }, P.druid],
+    // —— 猎人 ——
+    ['pierceArrow', (p) => { // 青绿穿风箭
+      line(p, 12, 48, 50, 16, P.hunterHi, 3);
+      circ(p, 50, 16, 4, P.gold);
+      line(p, 14, 46, 8, 52, P.druid, 2);
+      line(p, 14, 46, 8, 40, P.druid, 2);
+      circRing(p, 36, 28, 8, [120, 200, 100, 100], 1);
+    }, P.hunter],
+    ['multiShot', (p) => { // 金色散矢
+      for (let i = -2; i <= 2; i++) {
+        line(p, 14, 40 + i * 2, 50, 20 + i * 6, P.gold, 2);
+        circ(p, 50, 20 + i * 6, 2, P.gold);
+      }
+    }, P.hunter],
+    ['homingArrow', (p) => { // 紫色追踪印记
+      circRing(p, 32, 32, 16, P.mage, 2);
+      circRing(p, 32, 32, 10, P.mageHi, 1);
+      line(p, 32, 12, 32, 52, P.mageHi, 2);
+      line(p, 12, 32, 52, 32, P.mageHi, 2);
+      circ(p, 32, 32, 4, P.mage);
+    }, P.mage],
+    ['explodeArrow', (p) => { // 焰矢
+      line(p, 14, 46, 44, 18, P.hunterLeather, 3);
+      circ(p, 46, 16, 8, P.lava);
+      circ(p, 46, 16, 4, P.lavaCore);
+      circ(p, 40, 22, 3, P.bloodHi);
+    }, P.lava],
+    ['frostArrow', (p) => {
+      line(p, 14, 48, 48, 18, P.ice, 3);
+      circ(p, 48, 18, 5, P.iceHi);
+      for (let i = 0; i < 4; i++) {
+        const a = i * 1.2;
+        line(p, 48, 18, 48 + Math.cos(a) * 10, 18 + Math.sin(a) * 10, P.iceHi, 1);
+      }
+    }, P.ice],
+    ['chainArrow', (p) => {
+      line(p, 10, 40, 28, 24, P.hunterHi, 2);
+      line(p, 28, 24, 40, 36, P.gold, 2);
+      line(p, 40, 36, 54, 18, P.hunterHi, 2);
+      circ(p, 28, 24, 3, P.gold);
+      circ(p, 40, 36, 3, P.gold);
+    }, P.hunter],
+    ['arrowStorm', (p) => {
+      for (let i = 0; i < 7; i++) {
+        line(p, 10 + i * 7, 12, 14 + i * 7, 52, i % 2 ? P.gold : P.hunterHi, 2);
+        circ(p, 14 + i * 7, 52, 2, P.lava);
+      }
+    }, P.hunter],
+    // —— 法师 ——
+    ['mageFireball', (p) => { // 奥术紫核（概念板首图标）
+      circ(p, 32, 32, 16, P.mage);
+      circ(p, 32, 32, 10, P.mageHi);
+      circ(p, 28, 28, 4, P.white);
       for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
-        circ(p, 32 + Math.cos(a) * 18, 32 + Math.sin(a) * 18, 3, P.white);
+        const a = i * 1.05;
+        circ(p, 32 + Math.cos(a) * 20, 32 + Math.sin(a) * 20, 3, P.mageDim);
       }
-    }],
-    ['chainLightning', (p) => {
-      line(p, 12, 16, 28, 30, P.hunterHi, 3);
-      line(p, 28, 30, 20, 40, P.hunter, 3);
-      line(p, 20, 40, 40, 36, P.white, 2);
-      line(p, 40, 36, 52, 50, P.hunterHi, 3);
-      circ(p, 28, 30, 3, P.gold);
-    }],
+    }, P.mage],
+    ['arcaneMissile', (p) => {
+      for (let i = 0; i < 3; i++) {
+        circ(p, 18 + i * 14, 36 - i * 4, 7, P.mage);
+        circ(p, 18 + i * 14, 36 - i * 4, 3, P.mageHi);
+      }
+    }, P.mage],
+    ['frostRing', (p) => { // 冰晶法阵
+      circRing(p, 32, 38, 16, P.ice, 2);
+      for (let i = 0; i < 5; i++) {
+        const a = -0.4 + i * 0.5;
+        const x = 32 + Math.cos(a) * 10;
+        const y = 28 + Math.sin(a) * 8 - i;
+        line(p, 32, 42, x, y - 8, P.iceHi, 2);
+        circ(p, x, y - 8, 3, P.white);
+      }
+    }, P.ice],
+    ['chainLightning', (p) => { // 紫电
+      line(p, 12, 14, 28, 28, P.mageHi, 3);
+      line(p, 28, 28, 18, 40, P.mage, 3);
+      line(p, 18, 40, 38, 36, P.white, 2);
+      line(p, 38, 36, 52, 52, P.mageHi, 3);
+      circ(p, 28, 28, 3, P.gold);
+    }, P.mage],
     ['meteor', (p) => {
-      circ(p, 40, 18, 11, P.lava);
-      circ(p, 40, 18, 5, P.lavaCore);
-      line(p, 40, 28, 28, 50, P.bloodHi, 3);
-      ell(p, 28, 52, 16, 6, P.blood);
-    }],
+      circ(p, 40, 16, 12, P.mage);
+      circ(p, 40, 16, 6, P.lavaCore);
+      line(p, 36, 26, 22, 52, P.bloodHi, 4);
+      ell(p, 22, 54, 16, 6, P.lava);
+      circ(p, 40, 14, 3, P.mageHi);
+    }, P.mage],
     ['blackHole', (p) => {
       circ(p, 32, 32, 18, P.mageDim);
       circ(p, 32, 32, 11, P.ink);
       circRing(p, 32, 32, 18, P.mage, 2);
       for (let i = 0; i < 8; i++) {
         const a = (i / 8) * Math.PI * 2;
-        line(p, 32 + Math.cos(a) * 20, 32 + Math.sin(a) * 20, 32 + Math.cos(a) * 12, 32 + Math.sin(a) * 12, P.mageHi, 1);
+        line(p, 32 + Math.cos(a) * 22, 32 + Math.sin(a) * 22, 32 + Math.cos(a) * 12, 32 + Math.sin(a) * 12, P.mageHi, 1);
       }
-    }],
-    ['arrowStorm', (p) => {
-      for (let i = 0; i < 6; i++) {
-        line(p, 12 + i * 8, 14, 16 + i * 8, 50, P.hunter, 2);
-        circ(p, 16 + i * 8, 50, 2, P.gold);
-      }
-    }],
-    ['ancientNature', (p) => {
-      rect(p, 28, 30, 8, 20, P.boneDim);
-      circ(p, 32, 22, 14, P.druidDim);
-      circ(p, 32, 22, 8, P.druid);
-      circ(p, 24, 18, 5, P.druidHi);
-      circ(p, 40, 18, 5, P.druidHi);
-      // 眼
-      circ(p, 28, 36, 2, P.eye);
-      circ(p, 36, 36, 2, P.eye);
-    }],
+    }, P.mage],
     ['apocalypse', (p) => {
       circ(p, 32, 26, 14, P.bloodHi);
-      circ(p, 32, 26, 7, P.lavaCore);
+      circ(p, 32, 26, 7, P.mageHi);
       ell(p, 32, 50, 22, 8, P.lava);
-      for (let i = 0; i < 4; i++) circ(p, 16 + i * 10, 48, 3, P.gold);
-    }],
+      for (let i = 0; i < 4; i++) circ(p, 16 + i * 10, 48, 3, P.mageGold);
+    }, P.mage],
   ];
 
-  for (const [id, draw] of specs) {
+  for (const [id, draw, accent] of specs) {
     const p = create(64, 64);
-    // 哥特圆底板
-    circ(p, 32, 32, 30, [16, 12, 18, 245]);
-    circRing(p, 32, 32, 30, P.blood, 2);
-    circRing(p, 32, 32, 27, P.goldDim, 1);
+    iconPlate(p, accent);
     draw(p);
     save(p, `skills/icons/${id}.png`);
     list.push({ id, file: `skills/icons/${id}.png`, size: 64 });
@@ -768,7 +1003,7 @@ function main() {
     ui: genUI(),
   };
 
-  console.log('  characters: 3 sheets (idle/walk/attack/death)');
+  console.log('  characters: 3 sheets + 3 portraits (concept-aligned)');
   console.log('  enemies: 5 + boss');
   console.log('  skill icons:', manifest.skillIcons.length);
   console.log('  skill fx:', manifest.skillFX.length);
@@ -791,10 +1026,10 @@ function main() {
 
 | 分类 | 内容 | 尺寸 |
 |------|------|------|
-| 职业 | 德鲁伊 / 猎人 / 法师，各含 Idle·Walk·Attack·Death（4×4 精灵表） | 帧 96×96 |
+| 职业 | 德鲁伊 / 猎人 / 法师：Idle·Walk·Attack·Death 精灵表 + 选角立绘（对齐概念设定板） | 帧 96×96 / 立绘 160×160 |
 | 怪物 | 骷髅、食尸鬼、地狱犬、恶魔法师、堕落骑士 + walk 条带 | 64×64 |
 | Boss | 裂隙领主 + idle 条带 | 128×128 |
-| 技能图标 | 10 个（狼灵/穿透箭/火球/冰环/闪电/陨石/黑洞/箭雨/远古自然/末日） | 64×64 |
+| 技能图标 | 职业向图标（爪印/藤蔓/熊/古树 · 穿箭/散射/印记/焰矢 · 奥术/冰/雷/陨/洞 等） | 64×64 |
 | 技能特效 | 8 个条带（斩击/爆炸/闪电/冰霜/毒素/召唤爆发/陨石撞击/箭雨） | 帧 128×128×4 |
 | 地图 Tile | 石地、岩浆、裂缝、骨堆 | 128×128 |
 | UI | 生命、经验、金币、暂停、设置 | 48×48 |
