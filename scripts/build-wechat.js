@@ -70,19 +70,30 @@ async function main() {
   fs.writeFileSync(
     path.join(wechatDir, '导入说明.txt'),
     [
-      '地狱裂隙 Hell Rift — 微信导入说明',
+      '地狱裂隙 Hell Rift — 微信使用说明',
       '',
-      '1. 若之前导入过旧项目，请先关闭并删除旧项目（或选一个新空目录重新导入）',
-      '2. 用微信开发者工具「新建小游戏」',
-      '3. 目录选择本文件夹（里面有 game.js / game.json，没有 src/）',
-      '4. AppID 选择「测试号」',
-      '5. 点击创建 / 编译即可预览',
+      '【第一次导入】',
+      '1. 用微信开发者工具「新建小游戏」',
+      '2. 目录选择本文件夹（有 game.js / game.json，没有 src/）',
+      '3. AppID 选择「测试号」→ 创建 → 编译',
       '',
-      '本包为单文件打包版，运行时无任何 import/export，不会触发模块加载错误。',
-      '鼠标按住模拟器左半屏 = 摇杆。',
+      '【以后更新 —— 不用重新导入！】',
+      '方式 A（推荐）：双击运行「更新游戏.bat」，成功后回开发者工具点「编译」',
+      '方式 B：浏览器打开下面链接，另存为覆盖本目录的 game.js，再点「编译」',
+      '  https://raw.githubusercontent.com/Xingyu-TUe/3D-Agent/cursor/hell-rift-wechat-game-b0ee/game.js',
+      '',
+      '只要项目还开着，替换 game.js 后点编译即可，不必反复「下载 zip → 新建项目」。',
+      '',
+      '本包为单文件打包版。鼠标按住模拟器左半屏 = 摇杆。',
       '',
     ].join('\n'),
   );
+
+  // 一键更新脚本（Windows）
+  const batSrc = path.join(root, 'scripts', 'wechat-update', '更新游戏.bat');
+  if (fs.existsSync(batSrc)) {
+    fs.copyFileSync(batSrc, path.join(wechatDir, '更新游戏.bat'));
+  }
 
   // 打 zip（临时用 HellRift 目录名）
   const dist = path.join(root, 'dist');

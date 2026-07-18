@@ -98,34 +98,61 @@ export class CharacterSelectUI {
   }
 
   onTouchStart(id, x, y) {
-    if (this.hitStart(x, y) || this.hitLeft(x, y) || this.hitRight(x, y)) return;
+    // 按钮点击由 Scene 处理；此处只启动滑动手势
+    if (this.hitStart(x, y) || this.hitLeft(x, y) || this.hitRight(x, y)) {
+      this.dragging = false;
+      this.dragId = null;
+      return;
+    }
     this.dragging = true;
     this.dragId = id;
     this.dragStartX = x;
+    this.dragStartY = y;
     this.dragBase = this.targetOffset;
+    this._dragMoved = false;
   }
 
-  onTouchMove(id, x) {
+  onTouchMove(id, x, y) {
     if (!this.dragging || id !== this.dragId) return;
-    const dx = (x - this.dragStartX) / this.w;
-    this.offsetX = this.dragBase + dx * 1.4;
+    const dxPx = x - this.dragStartX;
+    if (Math.abs(dxPx) > 8) this._dragMoved = true;
+    // 跟手：每滑过约 55% 屏宽切换一格
+    const dx = dxPx / Math.max(1, this.w * 0.55);
+    this.offsetX = this.dragBase + dx;
   }
 
-  onTouchEnd(id, x) {
-    if (this.hitLeft(x, this.leftBtn.y + 10)) { this.prev(); this.dragging = false; return 'nav'; }
-    if (this.hitRight(x, this.rightBtn.y + 10)) { this.next(); this.dragging = false; return 'nav'; }
-    if (this.hitStart(x, this.startBtn.y + 10)) { this.dragging = false; return 'start'; }
-
-    if (this.dragging && id === this.dragId) {
-      const dx = x - this.dragStartX;
-      if (dx < -50) this.next();
-      else if (dx > 50) this.prev();
-      else this.targetOffset = -this.index;
+  /**
+   * 滑动结束：按当前偏移吸附到最近角色，不再用松手坐标去点左右箭头
+   * （旧逻辑用松手 x 命中左右按钮，导致左滑松手落在左侧 → 误触发 prev，猎人永远选不中）
+   */
+  onTouchEnd(id, x, y) {
+    if (!this.dragging || id !== this.dragId) {
       this.dragging = false;
       this.dragId = null;
-      return 'swipe';
+      return null;
     }
-    return null;
+
+    // 按偏移吸附最近 index（支持一次滑过多格）
+    let nearest = Math.round(-this.offsetX);
+    if (nearest < 0) nearest = 0;
+    if (nearest > this.characters.length - 1) nearest = this.characters.length - 1;
+
+    // 位移很小时：按方向阈值一格，避免轻微抖动不切换
+    const dxPx = x - this.dragStartX;
+    if (!this._dragMoved || Math.abs(dxPx) < 36) {
+      nearest = this.index;
+    } else if (Math.abs(nearest - this.index) < 1) {
+      if (dxPx < -36) nearest = Math.min(this.characters.length - 1, this.index + 1);
+      else if (dxPx > 36) nearest = Math.max(0, this.index - 1);
+    }
+
+    this.index = nearest;
+    this.targetOffset = -this.index;
+    this.offsetX = this.targetOffset;
+    this.dragging = false;
+    this.dragId = null;
+    this._dragMoved = false;
+    return 'swipe';
   }
 
   render(ctx) {

@@ -98,19 +98,38 @@ function guard(label, fn) {
   }
 }
 
-// 1) 角色选择界面渲染几帧，并切换到猎人再开始
-guard('character select', () => {
+// 1) 角色选择：验证滑动可停在中间职业（猎人），不会被左右箭头误触跳飞
+guard('character select swipe', () => {
   for (let i = 0; i < 5; i++) step(DT);
   console.log('当前场景:', game.scenes.currentName);
-  // 点右箭头切到猎人，再点开始冒险
   const sel = game.scenes.scenes.get('characterSelect');
-  if (sel) {
-    sel.ui.next();
-    sel.ui.next(); // mage or hunter depending on order: druid, hunter, mage
-    // 回到猎人
-    sel.ui.prev();
-    tap(sel.ui.startBtn.x + 10, sel.ui.startBtn.y + 10);
+  if (!sel) throw new Error('no characterSelect scene');
+  sel.ui.setIndexById('druid');
+  // 模拟从屏幕中部向左滑（应切到猎人 index=1）
+  const midX = W / 2;
+  const midY = H * 0.36;
+  game.scenes.onTouchStart(0, midX, midY);
+  game.scenes.onTouchMove(0, midX - 120, midY);
+  game.scenes.onTouchEnd(0, midX - 120, midY); // 松手在左侧，旧 bug 会误触发 prev
+  if (sel.ui.selected.id !== 'hunter') {
+    throw new Error('左滑后应选中猎人，实际=' + sel.ui.selected.id);
   }
+  // 再左滑到法师
+  game.scenes.onTouchStart(0, midX, midY);
+  game.scenes.onTouchMove(0, midX - 120, midY);
+  game.scenes.onTouchEnd(0, midX - 120, midY);
+  if (sel.ui.selected.id !== 'mage') {
+    throw new Error('再左滑应选中法师，实际=' + sel.ui.selected.id);
+  }
+  // 右滑回猎人
+  game.scenes.onTouchStart(0, midX, midY);
+  game.scenes.onTouchMove(0, midX + 120, midY);
+  game.scenes.onTouchEnd(0, midX + 120, midY);
+  if (sel.ui.selected.id !== 'hunter') {
+    throw new Error('右滑后应回到猎人，实际=' + sel.ui.selected.id);
+  }
+  console.log('滑动选角 OK →', sel.ui.selected.id);
+  tap(sel.ui.startBtn.x + 10, sel.ui.startBtn.y + 10);
 });
 console.log('进入后场景:', game.scenes.currentName, '职业:', game.selectedClassId);
 

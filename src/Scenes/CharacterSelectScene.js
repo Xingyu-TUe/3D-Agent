@@ -37,6 +37,7 @@ export class CharacterSelectScene {
   }
 
   onTouchStart(id, x, y) {
+    // 左右箭头：按下即切换（不走滑动逻辑）
     if (this.ui.hitLeft(x, y)) {
       this.ui.prev();
       return;
@@ -45,10 +46,12 @@ export class CharacterSelectScene {
       this.ui.next();
       return;
     }
+    // 开始冒险：按下即进入
     if (this.ui.hitStart(x, y)) {
       this._startAdventure();
       return;
     }
+    // 其余区域：开始滑动手势
     this.ui.onTouchStart(id, x, y);
   }
 
@@ -57,8 +60,8 @@ export class CharacterSelectScene {
   }
 
   onTouchEnd(id, x, y) {
-    const action = this.ui.onTouchEnd(id, x, y);
-    if (action === 'start') this._startAdventure();
+    // 仅结束滑动吸附，不再用松手坐标误点按钮
+    this.ui.onTouchEnd(id, x, y);
   }
 
   _startAdventure() {
