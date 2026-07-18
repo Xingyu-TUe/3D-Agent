@@ -20,10 +20,24 @@ npm run dev
 
 零依赖静态服务器（`scripts/dev-server.js`）。桌面浏览器可用鼠标按住左半屏模拟摇杆。
 
-### 微信小游戏运行
+### 微信小游戏运行（推荐：导入打包包）
 
-用 **微信开发者工具** 新建/导入「小游戏」项目，目录指向本仓库根目录即可。
-入口为 `game.js`（`game.json` 已配置竖屏）。项目已开启 ES6 模块。
+微信开发者工具对原生 ES Module 支持不稳定，**请务必导入打包后的单文件包**，
+不要直接导入含有 `src/` 的源码目录。
+
+1. 下载 [`dist/HellRift.zip`](./dist/HellRift.zip) 并解压
+2. 微信开发者工具 → 新建「小游戏」
+3. 目录选择解压出来的 `HellRift/`（里面只有 `game.js` / `game.json` / `project.config.json`，**没有** `src/`）
+4. AppID 选「测试号」→ 创建 / 编译
+
+若之前导入过旧项目，请先关闭旧项目，换一个新目录重新导入，避免缓存到旧的动态 `import()` 代码。
+
+本地重新打包：
+
+```bash
+npm install
+npm run build:wechat   # 生成 game.js + dist/HellRift.zip
+```
 
 ### 校验与自测
 
