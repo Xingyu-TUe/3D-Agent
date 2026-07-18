@@ -556,6 +556,286 @@
     ]
   };
 
+  // src/Assets/characters/packData.js
+  var packData_default = {
+    "version": 2,
+    "frameSize": 128,
+    "artTarget": 512,
+    "directions": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S",
+      "SW",
+      "W",
+      "NW"
+    ],
+    "characters": {
+      "druid": {
+        "path": "druid",
+        "id": "druid",
+        "frameWidth": 128,
+        "frameHeight": 128,
+        "pivot": {
+          "x": 64,
+          "y": 110
+        },
+        "directions": [
+          "N",
+          "NE",
+          "E",
+          "SE",
+          "S",
+          "SW",
+          "W",
+          "NW"
+        ],
+        "animations": {
+          "idle": {
+            "file": "idle.png",
+            "meta": "idle.json",
+            "frames": 8,
+            "fps": 8,
+            "loop": true
+          },
+          "walk": {
+            "file": "walk.png",
+            "meta": "walk.json",
+            "frames": 8,
+            "fps": 10,
+            "loop": true
+          },
+          "run": {
+            "file": "run.png",
+            "meta": "run.json",
+            "frames": 8,
+            "fps": 14,
+            "loop": true
+          },
+          "attack01": {
+            "file": "attack01.png",
+            "meta": "attack01.json",
+            "frames": 8,
+            "fps": 12,
+            "loop": false
+          },
+          "attack02": {
+            "file": "attack02.png",
+            "meta": "attack02.json",
+            "frames": 10,
+            "fps": 12,
+            "loop": false
+          },
+          "cast": {
+            "file": "cast.png",
+            "meta": "cast.json",
+            "frames": 10,
+            "fps": 10,
+            "loop": false
+          },
+          "hit": {
+            "file": "hit.png",
+            "meta": "hit.json",
+            "frames": 4,
+            "fps": 12,
+            "loop": false
+          },
+          "death": {
+            "file": "death.png",
+            "meta": "death.json",
+            "frames": 10,
+            "fps": 8,
+            "loop": false
+          },
+          "victory": {
+            "file": "victory.png",
+            "meta": "victory.json",
+            "frames": 8,
+            "fps": 8,
+            "loop": false
+          }
+        },
+        "shadow": "shadow.png",
+        "portrait": "portrait.png"
+      },
+      "hunter": {
+        "path": "hunter",
+        "id": "hunter",
+        "frameWidth": 128,
+        "frameHeight": 128,
+        "pivot": {
+          "x": 64,
+          "y": 110
+        },
+        "directions": [
+          "N",
+          "NE",
+          "E",
+          "SE",
+          "S",
+          "SW",
+          "W",
+          "NW"
+        ],
+        "animations": {
+          "idle": {
+            "file": "idle.png",
+            "meta": "idle.json",
+            "frames": 8,
+            "fps": 8,
+            "loop": true
+          },
+          "walk": {
+            "file": "walk.png",
+            "meta": "walk.json",
+            "frames": 8,
+            "fps": 10,
+            "loop": true
+          },
+          "run": {
+            "file": "run.png",
+            "meta": "run.json",
+            "frames": 8,
+            "fps": 14,
+            "loop": true
+          },
+          "attack01": {
+            "file": "attack01.png",
+            "meta": "attack01.json",
+            "frames": 8,
+            "fps": 12,
+            "loop": false
+          },
+          "attack02": {
+            "file": "attack02.png",
+            "meta": "attack02.json",
+            "frames": 10,
+            "fps": 12,
+            "loop": false
+          },
+          "shoot": {
+            "file": "shoot.png",
+            "meta": "shoot.json",
+            "frames": 10,
+            "fps": 12,
+            "loop": false
+          },
+          "hit": {
+            "file": "hit.png",
+            "meta": "hit.json",
+            "frames": 4,
+            "fps": 12,
+            "loop": false
+          },
+          "death": {
+            "file": "death.png",
+            "meta": "death.json",
+            "frames": 10,
+            "fps": 8,
+            "loop": false
+          },
+          "victory": {
+            "file": "victory.png",
+            "meta": "victory.json",
+            "frames": 8,
+            "fps": 8,
+            "loop": false
+          }
+        },
+        "shadow": "shadow.png",
+        "portrait": "portrait.png"
+      },
+      "mage": {
+        "path": "mage",
+        "id": "mage",
+        "frameWidth": 128,
+        "frameHeight": 128,
+        "pivot": {
+          "x": 64,
+          "y": 110
+        },
+        "directions": [
+          "N",
+          "NE",
+          "E",
+          "SE",
+          "S",
+          "SW",
+          "W",
+          "NW"
+        ],
+        "animations": {
+          "idle": {
+            "file": "idle.png",
+            "meta": "idle.json",
+            "frames": 8,
+            "fps": 8,
+            "loop": true
+          },
+          "walk": {
+            "file": "walk.png",
+            "meta": "walk.json",
+            "frames": 8,
+            "fps": 10,
+            "loop": true
+          },
+          "run": {
+            "file": "run.png",
+            "meta": "run.json",
+            "frames": 8,
+            "fps": 14,
+            "loop": true
+          },
+          "attack01": {
+            "file": "attack01.png",
+            "meta": "attack01.json",
+            "frames": 8,
+            "fps": 12,
+            "loop": false
+          },
+          "attack02": {
+            "file": "attack02.png",
+            "meta": "attack02.json",
+            "frames": 10,
+            "fps": 12,
+            "loop": false
+          },
+          "cast": {
+            "file": "cast.png",
+            "meta": "cast.json",
+            "frames": 10,
+            "fps": 10,
+            "loop": false
+          },
+          "hit": {
+            "file": "hit.png",
+            "meta": "hit.json",
+            "frames": 4,
+            "fps": 12,
+            "loop": false
+          },
+          "death": {
+            "file": "death.png",
+            "meta": "death.json",
+            "frames": 10,
+            "fps": 8,
+            "loop": false
+          },
+          "victory": {
+            "file": "victory.png",
+            "meta": "victory.json",
+            "frames": 8,
+            "fps": 8,
+            "loop": false
+          }
+        },
+        "shadow": "shadow.png",
+        "portrait": "portrait.png"
+      }
+    }
+  };
+
   // src/Utils/AssetLoader.js
   function createImage() {
     if (Platform_default.isWeChat && typeof wx !== "undefined" && wx.createImage) {
@@ -572,6 +852,7 @@
     constructor() {
       this.images = /* @__PURE__ */ new Map();
       this.manifest = manifestData_default;
+      this.charPack = packData_default;
       this.ready = false;
       this.basePath = candidateBases()[0];
       this._warned = /* @__PURE__ */ new Set();
@@ -579,7 +860,43 @@
     get(relPath) {
       return this.images.get(relPath) || null;
     }
-    /** 角色精灵表（含可选立绘 portrait） */
+    /**
+     * 新版 8 向角色动画。
+     * @returns {{ img, frameW, frameH, frames, fps, loop, pivot, dirs } | null}
+     */
+    characterAnim(classId, animName) {
+      const pack = this.charPack.characters[classId];
+      if (!pack || !pack.animations[animName]) return null;
+      const a = pack.animations[animName];
+      const rel = `characters/${classId}/${a.file}`;
+      const img = this.get(rel);
+      if (!img) return null;
+      return {
+        img,
+        frameW: pack.frameWidth || this.charPack.frameSize || 128,
+        frameH: pack.frameHeight || this.charPack.frameSize || 128,
+        frames: a.frames,
+        fps: a.fps,
+        loop: a.loop,
+        pivot: pack.pivot || { x: 64, y: 110 },
+        dirs: pack.directions || this.charPack.directions
+      };
+    }
+    characterShadow(classId) {
+      const img = this.get(`characters/${classId}/shadow.png`);
+      if (!img) return null;
+      const pack = this.charPack.characters[classId];
+      return {
+        img,
+        frameW: (pack == null ? void 0 : pack.frameWidth) || 128,
+        frameH: (pack == null ? void 0 : pack.frameHeight) || 128,
+        pivot: (pack == null ? void 0 : pack.pivot) || { x: 64, y: 110 }
+      };
+    }
+    characterPortrait(classId) {
+      return this.get(`characters/${classId}/portrait.png`) || this.get(`characters/${classId}_portrait.png`) || null;
+    }
+    /** 旧版单表回退 */
     character(classId) {
       const meta = this.manifest.characters[classId];
       if (!meta) return null;
@@ -588,10 +905,9 @@
       return {
         img,
         meta,
-        portrait: meta.portrait ? this.get(meta.portrait) : null
+        portrait: this.characterPortrait(classId) || (meta.portrait ? this.get(meta.portrait) : null)
       };
     }
-    /** 怪物立绘 / walk 条带 */
     enemy(enemyId) {
       const meta = this.manifest.enemies[enemyId];
       if (!meta) return null;
@@ -602,10 +918,6 @@
         idle: meta.idle ? this.get(meta.idle) : null
       };
     }
-    /**
-     * 怪物精灵条：walk / idle / portrait。
-     * @returns {{ img, frameW, frameH, frames, fps } | null}
-     */
     enemySheet(enemyId, kind = "walk") {
       const pack = this.enemy(enemyId);
       if (!pack) return null;
@@ -676,6 +988,17 @@
     collectPaths() {
       const paths = /* @__PURE__ */ new Set();
       const m = this.manifest;
+      const cp = this.charPack;
+      if (cp && cp.characters) {
+        for (const id of Object.keys(cp.characters)) {
+          const c = cp.characters[id];
+          for (const anim of Object.keys(c.animations || {})) {
+            paths.add(`characters/${id}/${c.animations[anim].file}`);
+          }
+          paths.add(`characters/${id}/shadow.png`);
+          paths.add(`characters/${id}/portrait.png`);
+        }
+      }
       for (const id in m.characters) {
         paths.add(m.characters[id].file);
         if (m.characters[id].portrait) paths.add(m.characters[id].portrait);
@@ -694,16 +1017,14 @@
     }
     async preload() {
       const paths = this.collectPaths();
-      if (paths.length) {
-        await this.loadImage(paths[0]);
-      }
+      if (paths.length) await this.loadImage(paths[0]);
       await Promise.all(paths.slice(1).map((p) => this.loadImage(p)));
       let ok = 0;
       for (const p of paths) if (this.images.get(p)) ok++;
       this.ready = ok > 0;
       if (ok === 0) {
         console.warn(
-          "[Assets] \u9884\u52A0\u8F7D 0/" + paths.length + "\u3002\u8BF7\u786E\u8BA4\u9879\u76EE\u76EE\u5F55\u91CC\u6709 Assets/ \u6587\u4EF6\u5939\uFF08\u4E0E game.js \u540C\u7EA7\uFF09\u3002\u6B63\u786E\u505A\u6CD5\uFF1A\u5BFC\u5165 dist/HellRift.zip \u89E3\u538B\u540E\u7684 HellRift \u76EE\u5F55\uFF0C\u4E0D\u8981\u6253\u5F00\u6574\u4E2A\u6E90\u7801\u4ED3\u5E93\u3002"
+          "[Assets] \u9884\u52A0\u8F7D 0/" + paths.length + "\u3002\u8BF7\u786E\u8BA4\u9879\u76EE\u76EE\u5F55\u91CC\u6709 Assets/ \u6587\u4EF6\u5939\uFF08\u4E0E game.js \u540C\u7EA7\uFF09\u3002"
         );
       } else {
         console.log(`[Assets] \u9884\u52A0\u8F7D ${ok}/${paths.length}\uFF0Cbase=${this.basePath}`);
@@ -1703,6 +2024,33 @@
     ctx.restore();
     return true;
   }
+  function drawFramePivot(ctx, img, frameW, frameH, col, row, dx, dy, pivotX, pivotY, dw, dh) {
+    if (!img) return false;
+    dw = dw || frameW;
+    dh = dh || frameH;
+    const scaleX = dw / frameW;
+    const scaleY = dh / frameH;
+    const sx = col * frameW;
+    const sy = row * frameH;
+    ctx.drawImage(
+      img,
+      sx,
+      sy,
+      frameW,
+      frameH,
+      dx - pivotX * scaleX,
+      dy - pivotY * scaleY,
+      dw,
+      dh
+    );
+    return true;
+  }
+  function facingToDirIndex(facing) {
+    let deg = facing * 180 / Math.PI + 90;
+    while (deg < 0) deg += 360;
+    while (deg >= 360) deg -= 360;
+    return Math.round(deg / 45) % 8;
+  }
   function drawIcon(ctx, img, cx, cy, size) {
     if (!img) return false;
     ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
@@ -1922,6 +2270,14 @@
       const bob = Math.sin(time * 2.5) * 3;
       ctx.save();
       ctx.translate(0, bob);
+      const portrait = AssetLoader_default.characterPortrait(char.id);
+      if (portrait) {
+        const pulse = 1 + Math.sin(time * 2) * 0.02;
+        const size = 180 * pulse;
+        ctx.drawImage(portrait, -size / 2, -size / 2 + 8, size, size);
+        ctx.restore();
+        return;
+      }
       const sheet = AssetLoader_default.character(char.id);
       if (sheet && sheet.portrait) {
         const pulse = 1 + Math.sin(time * 2) * 0.02;
@@ -2848,6 +3204,7 @@
       this.vy = 0;
       this.facing = -Math.PI / 2;
       this.moving = false;
+      this.moveMag = 0;
       this.hp = this.stats.final.maxHp;
       this.level = 1;
       this.exp = 0;
@@ -2862,16 +3219,32 @@
       this.anim = "idle";
       this.animTime = 0;
       this.attackTimer = 0;
+      this.hitTimer = 0;
+      this._atkToggle = false;
+      this.lockAnim = false;
     }
     get maxHp() {
       return this.stats.final.maxHp;
     }
-    /** 技能命中时触发攻击动画 */
-    triggerAttack() {
+    /** 技能释放：猎人 shoot，法系 cast / attack，交替 attack01/02 */
+    triggerAttack(kind) {
       if (!this.alive) return;
-      this.attackTimer = 0.32;
-      this.anim = "attack";
+      let anim = kind;
+      if (!anim) {
+        if (this.classId === "hunter") anim = "shoot";
+        else if (this._atkToggle) anim = "attack02";
+        else anim = this.classId === "mage" || this.classId === "druid" ? "cast" : "attack01";
+        if (anim === "cast" || anim === "attack02" || anim === "attack01") {
+          this._atkToggle = !this._atkToggle;
+          if (this._atkToggle && anim === "cast") anim = "attack01";
+        }
+      }
+      const pack = AssetLoader_default.characterAnim(this.classId, anim) || AssetLoader_default.characterAnim(this.classId, "attack01");
+      const dur = pack ? pack.frames / Math.max(1, pack.fps) : 0.35;
+      this.attackTimer = dur;
+      this.anim = pack ? anim : "attack";
       this.animTime = 0;
+      this.lockAnim = true;
     }
     update(dt, joystick) {
       if (joystick.active && joystick.mag > 0.05) {
@@ -2880,10 +3253,12 @@
         this.vy = joystick.dy * speed;
         this.facing = Math.atan2(joystick.dy, joystick.dx);
         this.moving = true;
+        this.moveMag = joystick.mag;
       } else {
         this.vx = 0;
         this.vy = 0;
         this.moving = false;
+        this.moveMag = 0;
       }
       this.x += this.vx * dt;
       this.y += this.vy * dt;
@@ -2894,17 +3269,26 @@
       }
       if (this.invincible > 0) this.invincible -= dt;
       if (this.hurtFlash > 0) this.hurtFlash -= dt;
+      if (this.hitTimer > 0) this.hitTimer -= dt;
       if (!this.alive) {
         if (this.anim !== "death") {
           this.anim = "death";
           this.animTime = 0;
+          this.lockAnim = true;
         }
+      } else if (this.hitTimer > 0 && !this.lockAnim) {
+        this.anim = "hit";
       } else if (this.attackTimer > 0) {
         this.attackTimer -= dt;
-        this.anim = "attack";
+        if (this.attackTimer <= 0) {
+          this.lockAnim = false;
+          this.attackTimer = 0;
+        }
       } else if (this.moving) {
-        this.anim = "walk";
+        this.lockAnim = false;
+        this.anim = this.moveMag > 0.72 ? "run" : "walk";
       } else {
+        this.lockAnim = false;
         this.anim = "idle";
       }
       this.animTime += dt;
@@ -2916,11 +3300,17 @@
       this.hp -= amount;
       this.invincible = GameConfig_default.player.invincibleTime;
       this.hurtFlash = 0.25;
+      this.hitTimer = 0.22;
+      if (!this.lockAnim) {
+        this.anim = "hit";
+        this.animTime = 0;
+      }
       if (this.hp <= 0) {
         this.hp = 0;
         this.alive = false;
         this.anim = "death";
         this.animTime = 0;
+        this.lockAnim = true;
       }
       return true;
     }
@@ -2959,28 +3349,89 @@
       const sx = camera.worldToScreenX(this.x);
       const sy = camera.worldToScreenY(this.y);
       const flashing = this.hurtFlash > 0 && (this.hurtFlash * 20 | 0) % 2 === 0;
-      const sheet = AssetLoader_default.character(this.classId);
-      if (sheet && sheet.img) {
-        const animDef = sheet.meta.animations[this.anim] || sheet.meta.animations.idle;
+      const dir = facingToDirIndex(this.facing);
+      let animName = this.anim;
+      let sheet = AssetLoader_default.characterAnim(this.classId, animName);
+      if (!sheet && animName === "run") sheet = AssetLoader_default.characterAnim(this.classId, "walk");
+      if (!sheet && (animName === "cast" || animName === "shoot" || animName === "attack02")) {
+        sheet = AssetLoader_default.characterAnim(this.classId, "attack01");
+        animName = "attack01";
+      }
+      if (!sheet && animName === "hit") sheet = AssetLoader_default.characterAnim(this.classId, "idle");
+      if (sheet) {
+        let frame = Math.floor(this.animTime * sheet.fps);
+        if (sheet.loop) frame %= sheet.frames;
+        else frame = Math.min(sheet.frames - 1, frame);
+        const shadow = AssetLoader_default.characterShadow(this.classId);
+        if (shadow) {
+          drawFramePivot(
+            ctx,
+            shadow.img,
+            shadow.frameW,
+            shadow.frameH,
+            0,
+            0,
+            sx,
+            sy,
+            shadow.pivot.x,
+            shadow.pivot.y,
+            52,
+            52
+          );
+        }
+        const drawSize = 64;
+        if (flashing) ctx.globalAlpha = 0.55;
+        drawFramePivot(
+          ctx,
+          sheet.img,
+          sheet.frameW,
+          sheet.frameH,
+          frame,
+          dir,
+          sx,
+          sy,
+          sheet.pivot.x,
+          sheet.pivot.y,
+          drawSize,
+          drawSize
+        );
+        ctx.globalAlpha = 1;
+        return;
+      }
+      const legacy = AssetLoader_default.character(this.classId);
+      if (legacy && legacy.img) {
+        const map = {
+          idle: "idle",
+          walk: "walk",
+          run: "walk",
+          attack: "attack",
+          attack01: "attack",
+          attack02: "attack",
+          cast: "attack",
+          shoot: "attack",
+          hit: "idle",
+          death: "death",
+          victory: "idle"
+        };
+        const key = map[this.anim] || "idle";
+        const animDef = legacy.meta.animations[key] || legacy.meta.animations.idle;
         let frame = Math.floor(this.animTime * animDef.fps) % animDef.frames;
         if (this.anim === "death") {
           frame = Math.min(animDef.frames - 1, Math.floor(this.animTime * animDef.fps));
         }
-        const flip = Math.cos(this.facing) < 0;
-        const size = 56;
         if (flashing) ctx.globalAlpha = 0.55;
         drawFrame(
           ctx,
-          sheet.img,
-          sheet.meta.frameWidth,
-          sheet.meta.frameHeight,
+          legacy.img,
+          legacy.meta.frameWidth,
+          legacy.meta.frameHeight,
           frame,
           animDef.row,
           sx,
           sy,
-          size,
-          size,
-          flip
+          56,
+          56,
+          Math.cos(this.facing) < 0
         );
         ctx.globalAlpha = 1;
         return;
@@ -3000,7 +3451,7 @@
       ctx.rotate(this.facing + Math.PI / 2);
       const model = this.classData.model || this.classId;
       if (model === "druid") {
-        ctx.fillStyle = flashing ? "#fff" : this.classData.accent || "#2f6b28";
+        ctx.fillStyle = flashing ? "#fff" : this.classData.accent || "#3a5a28";
         ctx.beginPath();
         ctx.moveTo(0, r * 0.5);
         ctx.lineTo(-r * 0.85, r * 1.15);
@@ -3050,6 +3501,7 @@
       this.vy = 0;
       this.facing = -Math.PI / 2;
       this.moving = false;
+      this.moveMag = 0;
       this.hp = this.stats.final.maxHp;
       this.level = 1;
       this.exp = 0;
@@ -3063,6 +3515,8 @@
       this.anim = "idle";
       this.animTime = 0;
       this.attackTimer = 0;
+      this.hitTimer = 0;
+      this.lockAnim = false;
     }
   };
   var Player_default = Player;

@@ -56,8 +56,12 @@ async function main() {
     // 同步到仓库根，避免误开源码目录时找不到 Assets/
     fs.rmSync(assetsRoot, { recursive: true, force: true });
     fs.cpSync(assetsSrc, assetsRoot, { recursive: true });
+    const charDir = path.join(assetsDst, 'characters');
+    if (fs.existsSync(charDir)) {
+      console.log('[HellRift] 已包含 8 向角色动画包 characters/{druid,hunter,mage}/');
+    }
   } else {
-    console.warn('[HellRift] 缺少 src/Assets，请先 npm run generate:assets');
+    console.warn('[HellRift] 缺少 src/Assets，请先 npm run generate:all');
   }
 
   const projectConfig = {

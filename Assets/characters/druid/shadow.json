@@ -1,0 +1,11 @@
+{
+  "classId": "druid",
+  "type": "shadow",
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "pivot": {
+    "x": 64,
+    "y": 110
+  },
+  "note": "单独阴影，游戏内脚底实时绘制或贴此图"
+}

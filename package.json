@@ -9,6 +9,8 @@
     "check": "node scripts/check-syntax.js",
     "build:wechat": "node scripts/build-wechat.js",
     "generate:assets": "node scripts/generate-assets.js",
+    "generate:characters": "node scripts/generate-character-sprites.js",
+    "generate:all": "node scripts/generate-assets.js && node scripts/generate-character-sprites.js",
     "test:sim": "node scripts/headless-sim.js"
   },
   "devDependencies": {

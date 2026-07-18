@@ -264,8 +264,15 @@ export class CharacterSelectUI {
     ctx.save();
     ctx.translate(0, bob);
 
+    const portrait = Assets.characterPortrait(char.id);
+    if (portrait) {
+      const pulse = 1 + Math.sin(time * 2) * 0.02;
+      const size = 180 * pulse;
+      ctx.drawImage(portrait, -size / 2, -size / 2 + 8, size, size);
+      ctx.restore();
+      return;
+    }
     const sheet = Assets.character(char.id);
-    // 优先概念立绘，其次 Idle 精灵帧
     if (sheet && sheet.portrait) {
       const pulse = 1 + Math.sin(time * 2) * 0.02;
       const size = 168 * pulse;

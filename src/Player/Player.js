@@ -1,7 +1,6 @@
 /**
  * Player.js
- * 玩家实体。优先使用 Assets 精灵表渲染（Idle/Walk/Attack/Death），
- * 贴图未就绪时回退程序化绘制。
+ * 玩家实体。优先使用 8 向角色动画包（概念图还原素材），失败回退旧表/程序化。
  */
 
 import Stats from './Stats.js';
@@ -9,7 +8,7 @@ import { getCharacter, getDefaultCharacterId } from '../Config/Character.js';
 import GameConfig from '../Config/GameConfig.js';
 import { clamp } from '../Utils/MathUtils.js';
 import Assets from '../Utils/AssetLoader.js';
-import { drawFrame } from '../Utils/SpriteUtil.js';
+import { drawFrame, drawFramePivot, facingToDirIndex } from '../Utils/SpriteUtil.js';
 
 export class Player {
   constructor(classId) {
@@ -25,6 +24,7 @@ export class Player {
     this.vy = 0;
     this.facing = -Math.PI / 2;
     this.moving = false;
+    this.moveMag = 0;
 
     this.hp = this.stats.final.maxHp;
     this.level = 1;
@@ -39,22 +39,39 @@ export class Player {
     this.kills = 0;
     this._passiveIds = new Set();
 
-    // 动画
     this.anim = 'idle';
     this.animTime = 0;
     this.attackTimer = 0;
+    this.hitTimer = 0;
+    this._atkToggle = false;
+    this.lockAnim = false;
   }
 
   get maxHp() {
     return this.stats.final.maxHp;
   }
 
-  /** 技能命中时触发攻击动画 */
-  triggerAttack() {
+  /** 技能释放：猎人 shoot，法系 cast / attack，交替 attack01/02 */
+  triggerAttack(kind) {
     if (!this.alive) return;
-    this.attackTimer = 0.32;
-    this.anim = 'attack';
+    let anim = kind;
+    if (!anim) {
+      if (this.classId === 'hunter') anim = 'shoot';
+      else if (this._atkToggle) anim = 'attack02';
+      else anim = this.classId === 'mage' || this.classId === 'druid' ? 'cast' : 'attack01';
+      // 交替
+      if (anim === 'cast' || anim === 'attack02' || anim === 'attack01') {
+        this._atkToggle = !this._atkToggle;
+        if (this._atkToggle && anim === 'cast') anim = 'attack01';
+      }
+    }
+    const pack = Assets.characterAnim(this.classId, anim)
+      || Assets.characterAnim(this.classId, 'attack01');
+    const dur = pack ? pack.frames / Math.max(1, pack.fps) : 0.35;
+    this.attackTimer = dur;
+    this.anim = pack ? anim : 'attack';
     this.animTime = 0;
+    this.lockAnim = true;
   }
 
   update(dt, joystick) {
@@ -64,10 +81,12 @@ export class Player {
       this.vy = joystick.dy * speed;
       this.facing = Math.atan2(joystick.dy, joystick.dx);
       this.moving = true;
+      this.moveMag = joystick.mag;
     } else {
       this.vx = 0;
       this.vy = 0;
       this.moving = false;
+      this.moveMag = 0;
     }
 
     this.x += this.vx * dt;
@@ -80,19 +99,28 @@ export class Player {
     }
     if (this.invincible > 0) this.invincible -= dt;
     if (this.hurtFlash > 0) this.hurtFlash -= dt;
+    if (this.hitTimer > 0) this.hitTimer -= dt;
 
     // 动画状态机
     if (!this.alive) {
       if (this.anim !== 'death') {
         this.anim = 'death';
         this.animTime = 0;
+        this.lockAnim = true;
       }
+    } else if (this.hitTimer > 0 && !this.lockAnim) {
+      this.anim = 'hit';
     } else if (this.attackTimer > 0) {
       this.attackTimer -= dt;
-      this.anim = 'attack';
+      if (this.attackTimer <= 0) {
+        this.lockAnim = false;
+        this.attackTimer = 0;
+      }
     } else if (this.moving) {
-      this.anim = 'walk';
+      this.lockAnim = false;
+      this.anim = this.moveMag > 0.72 ? 'run' : 'walk';
     } else {
+      this.lockAnim = false;
       this.anim = 'idle';
     }
     this.animTime += dt;
@@ -105,11 +133,17 @@ export class Player {
     this.hp -= amount;
     this.invincible = GameConfig.player.invincibleTime;
     this.hurtFlash = 0.25;
+    this.hitTimer = 0.22;
+    if (!this.lockAnim) {
+      this.anim = 'hit';
+      this.animTime = 0;
+    }
     if (this.hp <= 0) {
       this.hp = 0;
       this.alive = false;
       this.anim = 'death';
       this.animTime = 0;
+      this.lockAnim = true;
     }
     return true;
   }
@@ -153,29 +187,69 @@ export class Player {
     const sx = camera.worldToScreenX(this.x);
     const sy = camera.worldToScreenY(this.y);
     const flashing = this.hurtFlash > 0 && ((this.hurtFlash * 20) | 0) % 2 === 0;
+    const dir = facingToDirIndex(this.facing);
 
-    // 优先贴图
-    const sheet = Assets.character(this.classId);
-    if (sheet && sheet.img) {
-      const animDef = sheet.meta.animations[this.anim] || sheet.meta.animations.idle;
-      let frame = Math.floor(this.animTime * animDef.fps) % animDef.frames;
-      if (this.anim === 'death') {
-        frame = Math.min(animDef.frames - 1, Math.floor(this.animTime * animDef.fps));
+    // 1) 新版 8 向动画包
+    let animName = this.anim;
+    let sheet = Assets.characterAnim(this.classId, animName);
+    if (!sheet && animName === 'run') sheet = Assets.characterAnim(this.classId, 'walk');
+    if (!sheet && (animName === 'cast' || animName === 'shoot' || animName === 'attack02')) {
+      sheet = Assets.characterAnim(this.classId, 'attack01');
+      animName = 'attack01';
+    }
+    if (!sheet && animName === 'hit') sheet = Assets.characterAnim(this.classId, 'idle');
+    if (sheet) {
+      let frame = Math.floor(this.animTime * sheet.fps);
+      if (sheet.loop) frame %= sheet.frames;
+      else frame = Math.min(sheet.frames - 1, frame);
+
+      const shadow = Assets.characterShadow(this.classId);
+      if (shadow) {
+        drawFramePivot(
+          ctx, shadow.img, shadow.frameW, shadow.frameH,
+          0, 0, sx, sy,
+          shadow.pivot.x, shadow.pivot.y,
+          52, 52,
+        );
       }
-      const flip = Math.cos(this.facing) < 0;
-      const size = 56;
+
+      const drawSize = 64;
       if (flashing) ctx.globalAlpha = 0.55;
-      drawFrame(
-        ctx, sheet.img,
-        sheet.meta.frameWidth, sheet.meta.frameHeight,
-        frame, animDef.row,
-        sx, sy, size, size, flip,
+      drawFramePivot(
+        ctx, sheet.img, sheet.frameW, sheet.frameH,
+        frame, dir, sx, sy,
+        sheet.pivot.x, sheet.pivot.y,
+        drawSize, drawSize,
       );
       ctx.globalAlpha = 1;
       return;
     }
 
-    // 回退：程序化绘制
+    // 2) 旧版单表回退
+    const legacy = Assets.character(this.classId);
+    if (legacy && legacy.img) {
+      const map = {
+        idle: 'idle', walk: 'walk', run: 'walk',
+        attack: 'attack', attack01: 'attack', attack02: 'attack',
+        cast: 'attack', shoot: 'attack', hit: 'idle', death: 'death', victory: 'idle',
+      };
+      const key = map[this.anim] || 'idle';
+      const animDef = legacy.meta.animations[key] || legacy.meta.animations.idle;
+      let frame = Math.floor(this.animTime * animDef.fps) % animDef.frames;
+      if (this.anim === 'death') {
+        frame = Math.min(animDef.frames - 1, Math.floor(this.animTime * animDef.fps));
+      }
+      if (flashing) ctx.globalAlpha = 0.55;
+      drawFrame(
+        ctx, legacy.img,
+        legacy.meta.frameWidth, legacy.meta.frameHeight,
+        frame, animDef.row,
+        sx, sy, 56, 56, Math.cos(this.facing) < 0,
+      );
+      ctx.globalAlpha = 1;
+      return;
+    }
+
     this._renderFallback(ctx, sx, sy, flashing);
   }
 
@@ -192,7 +266,7 @@ export class Player {
     ctx.rotate(this.facing + Math.PI / 2);
     const model = this.classData.model || this.classId;
     if (model === 'druid') {
-      ctx.fillStyle = flashing ? '#fff' : (this.classData.accent || '#2f6b28');
+      ctx.fillStyle = flashing ? '#fff' : (this.classData.accent || '#3a5a28');
       ctx.beginPath();
       ctx.moveTo(0, r * 0.5);
       ctx.lineTo(-r * 0.85, r * 1.15);
@@ -243,6 +317,7 @@ export class Player {
     this.vy = 0;
     this.facing = -Math.PI / 2;
     this.moving = false;
+    this.moveMag = 0;
     this.hp = this.stats.final.maxHp;
     this.level = 1;
     this.exp = 0;
@@ -256,6 +331,8 @@ export class Player {
     this.anim = 'idle';
     this.animTime = 0;
     this.attackTimer = 0;
+    this.hitTimer = 0;
+    this.lockAnim = false;
   }
 }
 

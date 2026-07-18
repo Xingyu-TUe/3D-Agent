@@ -1,0 +1,41 @@
+{
+  "classId": "mage",
+  "animation": "hit",
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "frames": 4,
+  "directions": [
+    "N",
+    "NE",
+    "E",
+    "SE",
+    "S",
+    "SW",
+    "W",
+    "NW"
+  ],
+  "layout": {
+    "columns": "frames",
+    "rows": "directions",
+    "rowOrder": [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S",
+      "SW",
+      "W",
+      "NW"
+    ]
+  },
+  "fps": 12,
+  "loop": false,
+  "pivot": {
+    "x": 64,
+    "y": 110
+  },
+  "style": "dark-fantasy-topdown-45-concept-faithful",
+  "artTargetFrame": 512,
+  "runtimeFrame": 128,
+  "note": "运行时帧为微信可玩尺寸；pivot/布局与 512 管线一致，可替换高清贴图无需改代码"
+}

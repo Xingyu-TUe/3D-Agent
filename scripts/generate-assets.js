@@ -418,6 +418,8 @@ function drawPortrait(cls) {
 }
 
 function genCharacters() {
+  // 完整 8 向动画包由 generate-character-sprites.js 输出到 characters/{id}/
+  // 此处仅保留旧版单表作为回退（兼容）
   const meta = {};
   for (const cls of ['druid', 'hunter', 'mage']) {
     const sheet = create(CF * 4, CF * 4);

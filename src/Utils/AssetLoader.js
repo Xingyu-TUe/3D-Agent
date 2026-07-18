@@ -1,16 +1,15 @@
 /**
  * AssetLoader.js
- * 全局素材管理：预加载角色/怪物/UI/技能图标贴图。
+ * 全局素材管理：预加载角色（8 向动画包）/怪物/UI/技能图标。
  *
  * 路径候选：
- *   微信小游戏 → Assets/（推荐，与 game.js 同级）→ src/Assets/（误开仓库根目录时回退）
+ *   微信小游戏 → Assets/ → src/Assets/
  *   浏览器 H5  → src/Assets/ → Assets/
- *
- * 未加载成功时渲染层回退到程序化绘制。
  */
 
 import Platform from './Platform.js';
 import manifest from '../Assets/manifestData.js';
+import charPack from '../Assets/characters/packData.js';
 
 function createImage() {
   if (Platform.isWeChat && typeof wx !== 'undefined' && wx.createImage) {
@@ -29,6 +28,7 @@ export class AssetLoader {
   constructor() {
     this.images = new Map();
     this.manifest = manifest;
+    this.charPack = charPack;
     this.ready = false;
     this.basePath = candidateBases()[0];
     this._warned = new Set();
@@ -38,7 +38,48 @@ export class AssetLoader {
     return this.images.get(relPath) || null;
   }
 
-  /** 角色精灵表（含可选立绘 portrait） */
+  /**
+   * 新版 8 向角色动画。
+   * @returns {{ img, frameW, frameH, frames, fps, loop, pivot, dirs } | null}
+   */
+  characterAnim(classId, animName) {
+    const pack = this.charPack.characters[classId];
+    if (!pack || !pack.animations[animName]) return null;
+    const a = pack.animations[animName];
+    const rel = `characters/${classId}/${a.file}`;
+    const img = this.get(rel);
+    if (!img) return null;
+    return {
+      img,
+      frameW: pack.frameWidth || this.charPack.frameSize || 128,
+      frameH: pack.frameHeight || this.charPack.frameSize || 128,
+      frames: a.frames,
+      fps: a.fps,
+      loop: a.loop,
+      pivot: pack.pivot || { x: 64, y: 110 },
+      dirs: pack.directions || this.charPack.directions,
+    };
+  }
+
+  characterShadow(classId) {
+    const img = this.get(`characters/${classId}/shadow.png`);
+    if (!img) return null;
+    const pack = this.charPack.characters[classId];
+    return {
+      img,
+      frameW: pack?.frameWidth || 128,
+      frameH: pack?.frameHeight || 128,
+      pivot: pack?.pivot || { x: 64, y: 110 },
+    };
+  }
+
+  characterPortrait(classId) {
+    return this.get(`characters/${classId}/portrait.png`)
+      || this.get(`characters/${classId}_portrait.png`)
+      || null;
+  }
+
+  /** 旧版单表回退 */
   character(classId) {
     const meta = this.manifest.characters[classId];
     if (!meta) return null;
@@ -47,11 +88,10 @@ export class AssetLoader {
     return {
       img,
       meta,
-      portrait: meta.portrait ? this.get(meta.portrait) : null,
+      portrait: this.characterPortrait(classId) || (meta.portrait ? this.get(meta.portrait) : null),
     };
   }
 
-  /** 怪物立绘 / walk 条带 */
   enemy(enemyId) {
     const meta = this.manifest.enemies[enemyId];
     if (!meta) return null;
@@ -63,10 +103,6 @@ export class AssetLoader {
     };
   }
 
-  /**
-   * 怪物精灵条：walk / idle / portrait。
-   * @returns {{ img, frameW, frameH, frames, fps } | null}
-   */
   enemySheet(enemyId, kind = 'walk') {
     const pack = this.enemy(enemyId);
     if (!pack) return null;
@@ -116,7 +152,6 @@ export class AssetLoader {
       };
       img.onload = () => done(img);
       img.onerror = () => done(null);
-      // 微信部分环境无 onerror，给超时兜底
       setTimeout(() => done(null), 4000);
       img.src = base + relPath;
     });
@@ -136,7 +171,6 @@ export class AssetLoader {
     }
     if (!this._warned.has(relPath)) {
       this._warned.add(relPath);
-      // 只对首个失败打一次样例，避免刷屏 40+ 条
       if (this._warned.size <= 2) {
         console.warn('[Assets] 加载失败:', relPath, '（已尝试', bases.join(' / '), '）');
       }
@@ -147,6 +181,21 @@ export class AssetLoader {
   collectPaths() {
     const paths = new Set();
     const m = this.manifest;
+
+    // 新版角色包
+    const cp = this.charPack;
+    if (cp && cp.characters) {
+      for (const id of Object.keys(cp.characters)) {
+        const c = cp.characters[id];
+        for (const anim of Object.keys(c.animations || {})) {
+          paths.add(`characters/${id}/${c.animations[anim].file}`);
+        }
+        paths.add(`characters/${id}/shadow.png`);
+        paths.add(`characters/${id}/portrait.png`);
+      }
+    }
+
+    // 旧版角色表（回退）
     for (const id in m.characters) {
       paths.add(m.characters[id].file);
       if (m.characters[id].portrait) paths.add(m.characters[id].portrait);
@@ -166,10 +215,7 @@ export class AssetLoader {
 
   async preload() {
     const paths = this.collectPaths();
-    // 先探测一条，锁定可用 base，减少错误路径上的无效请求
-    if (paths.length) {
-      await this.loadImage(paths[0]);
-    }
+    if (paths.length) await this.loadImage(paths[0]);
     await Promise.all(paths.slice(1).map((p) => this.loadImage(p)));
     let ok = 0;
     for (const p of paths) if (this.images.get(p)) ok++;
@@ -177,8 +223,7 @@ export class AssetLoader {
     if (ok === 0) {
       console.warn(
         '[Assets] 预加载 0/' + paths.length
-          + '。请确认项目目录里有 Assets/ 文件夹（与 game.js 同级）。'
-          + '正确做法：导入 dist/HellRift.zip 解压后的 HellRift 目录，不要打开整个源码仓库。',
+          + '。请确认项目目录里有 Assets/ 文件夹（与 game.js 同级）。',
       );
     } else {
       console.log(`[Assets] 预加载 ${ok}/${paths.length}，base=${this.basePath}`);
@@ -187,6 +232,5 @@ export class AssetLoader {
   }
 }
 
-/** 全局单例 */
 export const Assets = new AssetLoader();
 export default Assets;
