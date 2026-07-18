@@ -776,6 +776,13 @@ function main() {
   console.log('  ui:', manifest.ui.length);
 
   fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  // 供打包内联（微信无 fetch JSON）；与 manifest.json 同步
+  fs.writeFileSync(
+    path.join(OUT, 'manifestData.js'),
+    '/** Auto from manifest.json — do not edit by hand */\nexport default '
+      + JSON.stringify(manifest, null, 2)
+      + ';\n',
+  );
   fs.writeFileSync(path.join(OUT, 'README.md'), `# 地狱裂隙 · 原创暗黑哥特素材包
 
 统一风格：**暗黑哥特 / 俯视角 / 透明背景 PNG**，无暴雪等第三方版权素材。

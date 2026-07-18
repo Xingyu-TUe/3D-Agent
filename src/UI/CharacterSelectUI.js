@@ -8,6 +8,8 @@
 import { CHARACTER_LIST } from '../Config/Character.js';
 import SKILL_DATA from '../Data/skills.js';
 import { roundRect, pointInRect } from './UIHelpers.js';
+import Assets from '../Utils/AssetLoader.js';
+import { drawFrame, drawIcon } from '../Utils/SpriteUtil.js';
 
 function stars(n, max = 5) {
   let s = '';
@@ -253,25 +255,28 @@ export class CharacterSelectUI {
     ctx.fill();
 
     this._drawPortrait(ctx, char, this.time);
-
-    // 预留标签
-    if (selected) {
-      ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      roundRect(ctx, -54, 118, 108, 20, 6);
-      ctx.fill();
-      ctx.fillStyle = '#8b9cb3';
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('立绘位 · 可替换', 0, 128);
-    }
     ctx.restore();
   }
 
-  /** 程序化职业立绘（后续可替换为 3D/贴图） */
+  /** 职业立绘：优先精灵表 Idle，失败回退程序化绘制 */
   _drawPortrait(ctx, char, time) {
     const bob = Math.sin(time * 2.5) * 3;
     ctx.save();
     ctx.translate(0, bob);
+
+    const sheet = Assets.character(char.id);
+    if (sheet && sheet.img) {
+      const anim = sheet.meta.animations.idle || sheet.meta.animations.walk;
+      const frame = Math.floor(time * (anim.fps || 6)) % anim.frames;
+      drawFrame(
+        ctx, sheet.img,
+        sheet.meta.frameWidth, sheet.meta.frameHeight,
+        frame, anim.row,
+        0, 10, 150, 150, false,
+      );
+      ctx.restore();
+      return;
+    }
 
     if (char.model === 'druid') {
       // 德鲁伊：绿袍 + 鹿角
@@ -449,15 +454,17 @@ export class CharacterSelectUI {
       ctx.textAlign = 'left';
     }
 
-    // 初始技能
+    // 初始技能（有贴图则并排显示图标）
     const startId = char.skills.start[0];
     const skill = SKILL_DATA[startId];
     const sy = y + rows.length * 18 + 10;
     if (skill && sy < this.startBtn.y - 20) {
+      const skillImg = Assets.skillIcon(startId);
+      if (skillImg) drawIcon(ctx, skillImg, w / 2 - 72, sy, 28);
       ctx.textAlign = 'center';
       ctx.fillStyle = '#ffd24a';
       ctx.font = 'bold 12px "Microsoft YaHei", sans-serif';
-      ctx.fillText(`初始技能：${skill.name}`, w / 2, sy);
+      ctx.fillText(`初始技能：${skill.name}`, w / 2 + (skillImg ? 14 : 0), sy);
       ctx.fillStyle = '#8b9cb3';
       ctx.font = '11px "Microsoft YaHei", sans-serif';
       ctx.fillText(skill.desc, w / 2, sy + 16);

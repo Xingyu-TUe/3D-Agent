@@ -205,6 +205,7 @@ export class EnemySystem {
         e.x += (dx / d) * spd * dt;
         e.y += (dy / d) * spd * dt;
       }
+      e.faceLeft = dx < 0;
 
       // 击退位移衰减
       if (e.knockX !== 0 || e.knockY !== 0) {

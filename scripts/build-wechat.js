@@ -47,6 +47,15 @@ async function main() {
   fs.copyFileSync(outfile, path.join(wechatDir, 'game.js'));
   fs.copyFileSync(path.join(root, 'game.json'), path.join(wechatDir, 'game.json'));
 
+  // 贴图目录（运行时按 Assets/ 相对路径加载，不内联进 game.js）
+  const assetsSrc = path.join(root, 'src', 'Assets');
+  const assetsDst = path.join(wechatDir, 'Assets');
+  if (fs.existsSync(assetsSrc)) {
+    fs.cpSync(assetsSrc, assetsDst, { recursive: true });
+  } else {
+    console.warn('[HellRift] 缺少 src/Assets，请先 npm run generate:assets');
+  }
+
   const projectConfig = {
     description: '地狱裂隙 Hell Rift - 微信小游戏（单文件打包版）',
     setting: {
@@ -74,7 +83,7 @@ async function main() {
       '',
       '【第一次导入】',
       '1. 解压 HellRift.zip，得到 HellRift 文件夹',
-      '2. 确认该文件夹里能直接看到：game.js、game.json、project.config.json',
+      '2. 确认该文件夹里能直接看到：game.js、game.json、project.config.json、Assets/',
       '   （不要选到上一级，也不要选到空文件夹）',
       '3. 微信开发者工具 → 新建小游戏 → 目录选这个 HellRift 文件夹',
       '4. AppID 选「测试号」→ 创建 → 编译',
@@ -86,10 +95,15 @@ async function main() {
       '   https://cdn.jsdelivr.net/gh/Xingyu-TUe/3D-Agent@cursor/hell-rift-wechat-game-b0ee/game.js',
       'C. 重新解压 zip，用开发者工具「导入项目」指向解压后的 HellRift',
       '',
+      '【贴图 Assets/】',
+      '角色/怪物/UI 贴图在 Assets/ 目录，必须与 game.js 同级。',
+      '只更新 game.js 不够时，请重新下载 HellRift.zip 覆盖整个文件夹。',
+      '',
       '【以后更新 —— 不用重新导入】',
       '双击「更新游戏.bat」→ 回开发者工具点「编译」即可。',
+      '若贴图也有更新，请重新解压 zip 覆盖 Assets/。',
       '',
-      '本包为单文件打包版。鼠标按住模拟器左半屏 = 摇杆。',
+      '本包为单文件打包版 + Assets 贴图。鼠标按住模拟器左半屏 = 摇杆。',
       '',
     ].join('\n'),
   );

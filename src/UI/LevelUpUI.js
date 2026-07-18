@@ -4,6 +4,8 @@
  */
 
 import { roundRect, pointInRect, SKILL_ICONS } from './UIHelpers.js';
+import Assets from '../Utils/AssetLoader.js';
+import { drawIcon } from '../Utils/SpriteUtil.js';
 
 export class LevelUpUI {
   constructor() {
@@ -111,12 +113,17 @@ export class LevelUpUI {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    ctx.fillStyle = option.color;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `bold ${iconSize * 0.5}px "Microsoft YaHei", sans-serif`;
-    const icon = option.kind === 'skill' ? (SKILL_ICONS[option.id] || '技') : (option.kind === 'heal' ? '治' : '强');
-    ctx.fillText(icon, ix + iconSize / 2, iy + iconSize / 2);
+    const iconImg = option.kind === 'skill' ? Assets.skillIcon(option.id) : null;
+    if (iconImg) {
+      drawIcon(ctx, iconImg, ix + iconSize / 2, iy + iconSize / 2, iconSize - 8);
+    } else {
+      ctx.fillStyle = option.color;
+      ctx.font = `bold ${iconSize * 0.5}px "Microsoft YaHei", sans-serif`;
+      const icon = option.kind === 'skill' ? (SKILL_ICONS[option.id] || '技') : (option.kind === 'heal' ? '治' : '强');
+      ctx.fillText(icon, ix + iconSize / 2, iy + iconSize / 2);
+    }
 
     // 文字
     const tx = ix + iconSize + 16;

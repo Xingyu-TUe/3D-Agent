@@ -206,6 +206,419 @@
   };
   var Platform_default = Platform;
 
+  // src/Assets/manifestData.js
+  var manifestData_default = {
+    "name": "Hell Rift Asset Pack",
+    "version": "1.1.0",
+    "style": "dark-gothic-topdown-original",
+    "note": "\u539F\u521B\u7A0B\u5E8F\u5316\u50CF\u7D20/\u77E2\u91CF\u62FC\u63A5\u7D20\u6750\uFF0C\u65E0\u7B2C\u4E09\u65B9\u7248\u6743\u3002\u4FEF\u89C6\u89D2\u3001\u900F\u660E\u80CC\u666F\u3002",
+    "palette": {
+      "blood": "#b3121f",
+      "ash": "#37343e",
+      "bone": "#dcd2be",
+      "lava": "#ff781e",
+      "gold": "#ffcd46",
+      "druid": "#64b446",
+      "hunter": "#50aaf0",
+      "mage": "#b464f0"
+    },
+    "characters": {
+      "druid": {
+        "file": "characters/druid.png",
+        "frameWidth": 96,
+        "frameHeight": 96,
+        "animations": {
+          "idle": {
+            "row": 0,
+            "frames": 4,
+            "fps": 6
+          },
+          "walk": {
+            "row": 1,
+            "frames": 4,
+            "fps": 10
+          },
+          "attack": {
+            "row": 2,
+            "frames": 4,
+            "fps": 12
+          },
+          "death": {
+            "row": 3,
+            "frames": 4,
+            "fps": 8
+          }
+        }
+      },
+      "hunter": {
+        "file": "characters/hunter.png",
+        "frameWidth": 96,
+        "frameHeight": 96,
+        "animations": {
+          "idle": {
+            "row": 0,
+            "frames": 4,
+            "fps": 6
+          },
+          "walk": {
+            "row": 1,
+            "frames": 4,
+            "fps": 10
+          },
+          "attack": {
+            "row": 2,
+            "frames": 4,
+            "fps": 12
+          },
+          "death": {
+            "row": 3,
+            "frames": 4,
+            "fps": 8
+          }
+        }
+      },
+      "mage": {
+        "file": "characters/mage.png",
+        "frameWidth": 96,
+        "frameHeight": 96,
+        "animations": {
+          "idle": {
+            "row": 0,
+            "frames": 4,
+            "fps": 6
+          },
+          "walk": {
+            "row": 1,
+            "frames": 4,
+            "fps": 10
+          },
+          "attack": {
+            "row": 2,
+            "frames": 4,
+            "fps": 12
+          },
+          "death": {
+            "row": 3,
+            "frames": 4,
+            "fps": 8
+          }
+        }
+      }
+    },
+    "enemies": {
+      "skeleton": {
+        "file": "enemies/skeleton.png",
+        "walk": "enemies/skeleton_walk.png",
+        "size": 64
+      },
+      "ghoul": {
+        "file": "enemies/ghoul.png",
+        "walk": "enemies/ghoul_walk.png",
+        "size": 64
+      },
+      "hellhound": {
+        "file": "enemies/hellhound.png",
+        "walk": "enemies/hellhound_walk.png",
+        "size": 64
+      },
+      "demonMage": {
+        "file": "enemies/demonMage.png",
+        "walk": "enemies/demonMage_walk.png",
+        "size": 64
+      },
+      "fallenKnight": {
+        "file": "enemies/fallenKnight.png",
+        "walk": "enemies/fallenKnight_walk.png",
+        "size": 64
+      },
+      "riftLord": {
+        "file": "enemies/riftLord.png",
+        "idle": "enemies/riftLord_idle.png",
+        "size": 128
+      }
+    },
+    "skillIcons": [
+      {
+        "id": "wolfSummon",
+        "file": "skills/icons/wolfSummon.png",
+        "size": 64
+      },
+      {
+        "id": "pierceArrow",
+        "file": "skills/icons/pierceArrow.png",
+        "size": 64
+      },
+      {
+        "id": "mageFireball",
+        "file": "skills/icons/mageFireball.png",
+        "size": 64
+      },
+      {
+        "id": "frostRing",
+        "file": "skills/icons/frostRing.png",
+        "size": 64
+      },
+      {
+        "id": "chainLightning",
+        "file": "skills/icons/chainLightning.png",
+        "size": 64
+      },
+      {
+        "id": "meteor",
+        "file": "skills/icons/meteor.png",
+        "size": 64
+      },
+      {
+        "id": "blackHole",
+        "file": "skills/icons/blackHole.png",
+        "size": 64
+      },
+      {
+        "id": "arrowStorm",
+        "file": "skills/icons/arrowStorm.png",
+        "size": 64
+      },
+      {
+        "id": "ancientNature",
+        "file": "skills/icons/ancientNature.png",
+        "size": 64
+      },
+      {
+        "id": "apocalypse",
+        "file": "skills/icons/apocalypse.png",
+        "size": 64
+      }
+    ],
+    "skillFX": [
+      {
+        "id": "slash",
+        "file": "skills/fx/slash.png",
+        "frameWidth": 128,
+        "frames": 4,
+        "fps": 12
+      },
+      {
+        "id": "explosion",
+        "file": "skills/fx/explosion.png",
+        "frameWidth": 128,
+        "frames": 4,
+        "fps": 12
+      },
+      {
+        "id": "lightning",
+        "file": "skills/fx/lightning.png",
+        "frameWidth": 128,
+        "frames": 4,
+        "fps": 12
+      },
+      {
+        "id": "frost",
+        "file": "skills/fx/frost.png",
+        "frameWidth": 128,
+        "frames": 4,
+        "fps": 12
+      },
+      {
+        "id": "poison",
+        "file": "skills/fx/poison.png",
+        "frameWidth": 128,
+        "frames": 4,
+        "fps": 12
+      },
+      {
+        "id": "summonBurst",
+        "file": "skills/fx/summonBurst.png",
+        "frameWidth": 128,
+        "frames": 4,
+        "fps": 12
+      },
+      {
+        "id": "meteorImpact",
+        "file": "skills/fx/meteorImpact.png",
+        "frameWidth": 128,
+        "frames": 4,
+        "fps": 12
+      },
+      {
+        "id": "arrowRain",
+        "file": "skills/fx/arrowRain.png",
+        "frameWidth": 128,
+        "frames": 4,
+        "fps": 12
+      }
+    ],
+    "tiles": [
+      {
+        "id": "stone",
+        "file": "tiles/stone.png",
+        "size": 128
+      },
+      {
+        "id": "lava",
+        "file": "tiles/lava.png",
+        "size": 128
+      },
+      {
+        "id": "crack",
+        "file": "tiles/crack.png",
+        "size": 128
+      },
+      {
+        "id": "bones",
+        "file": "tiles/bones.png",
+        "size": 128
+      }
+    ],
+    "ui": [
+      {
+        "id": "hp",
+        "file": "ui/hp.png",
+        "size": 48
+      },
+      {
+        "id": "exp",
+        "file": "ui/exp.png",
+        "size": 48
+      },
+      {
+        "id": "gold",
+        "file": "ui/gold.png",
+        "size": 48
+      },
+      {
+        "id": "pause",
+        "file": "ui/pause.png",
+        "size": 48
+      },
+      {
+        "id": "settings",
+        "file": "ui/settings.png",
+        "size": 48
+      }
+    ]
+  };
+
+  // src/Utils/AssetLoader.js
+  function createImage() {
+    if (Platform_default.isWeChat && typeof wx !== "undefined" && wx.createImage) {
+      return wx.createImage();
+    }
+    if (typeof Image !== "undefined") return new Image();
+    return null;
+  }
+  var AssetLoader = class {
+    constructor() {
+      this.images = /* @__PURE__ */ new Map();
+      this.manifest = manifestData_default;
+      this.ready = false;
+      this.basePath = Platform_default.isWeChat ? "Assets/" : "src/Assets/";
+    }
+    get(relPath) {
+      return this.images.get(relPath) || null;
+    }
+    /** 角色精灵表 */
+    character(classId) {
+      const meta = this.manifest.characters[classId];
+      if (!meta) return null;
+      const img = this.get(meta.file);
+      if (!img) return null;
+      return { img, meta };
+    }
+    /** 怪物立绘 / walk 条带 */
+    enemy(enemyId) {
+      const meta = this.manifest.enemies[enemyId];
+      if (!meta) return null;
+      return {
+        meta,
+        portrait: this.get(meta.file),
+        walk: meta.walk ? this.get(meta.walk) : null,
+        idle: meta.idle ? this.get(meta.idle) : null
+      };
+    }
+    /**
+     * 怪物精灵条：walk / idle / portrait。
+     * @returns {{ img, frameW, frameH, frames, fps } | null}
+     */
+    enemySheet(enemyId, kind = "walk") {
+      const pack = this.enemy(enemyId);
+      if (!pack) return null;
+      const size = pack.meta.size || 64;
+      let img = null;
+      if (kind === "walk") img = pack.walk || pack.portrait;
+      else if (kind === "idle") img = pack.idle || pack.portrait;
+      else img = pack.portrait || pack.walk || pack.idle;
+      if (!img) return null;
+      const w = img.width || size;
+      const frames = w > size ? Math.max(1, Math.floor(w / size)) : 1;
+      return { img, frameW: size, frameH: size, frames, fps: 8 };
+    }
+    ui(id) {
+      const item = (this.manifest.ui || []).find((u) => u.id === id);
+      return item ? this.get(item.file) : null;
+    }
+    skillIcon(id) {
+      const item = (this.manifest.skillIcons || []).find((u) => u.id === id);
+      return item ? this.get(item.file) : null;
+    }
+    skillFx(id) {
+      const item = (this.manifest.skillFX || []).find((u) => u.id === id);
+      return item ? { img: this.get(item.file), meta: item } : null;
+    }
+    tile(id) {
+      const item = (this.manifest.tiles || []).find((u) => u.id === id);
+      return item ? this.get(item.file) : null;
+    }
+    loadImage(relPath) {
+      return new Promise((resolve) => {
+        if (this.images.has(relPath)) {
+          resolve(this.images.get(relPath));
+          return;
+        }
+        const img = createImage();
+        if (!img) {
+          resolve(null);
+          return;
+        }
+        img.onload = () => {
+          this.images.set(relPath, img);
+          resolve(img);
+        };
+        img.onerror = () => {
+          console.warn("[Assets] \u52A0\u8F7D\u5931\u8D25:", this.basePath + relPath);
+          resolve(null);
+        };
+        img.src = this.basePath + relPath;
+      });
+    }
+    collectPaths() {
+      const paths = /* @__PURE__ */ new Set();
+      const m = this.manifest;
+      for (const id in m.characters) paths.add(m.characters[id].file);
+      for (const id in m.enemies) {
+        const e = m.enemies[id];
+        paths.add(e.file);
+        if (e.walk) paths.add(e.walk);
+        if (e.idle) paths.add(e.idle);
+      }
+      for (const icon of m.skillIcons || []) paths.add(icon.file);
+      for (const fx of m.skillFX || []) paths.add(fx.file);
+      for (const t of m.tiles || []) paths.add(t.file);
+      for (const u of m.ui || []) paths.add(u.file);
+      return [...paths];
+    }
+    async preload() {
+      const paths = this.collectPaths();
+      await Promise.all(paths.map((p) => this.loadImage(p)));
+      let ok = 0;
+      for (const p of paths) if (this.images.get(p)) ok++;
+      this.ready = ok > 0;
+      console.log(`[Assets] \u9884\u52A0\u8F7D ${ok}/${paths.length}\uFF0Cbase=${this.basePath}`);
+      return this.ready;
+    }
+  };
+  var Assets = new AssetLoader();
+  var AssetLoader_default = Assets;
+
   // src/Utils/Renderer.js
   var Renderer = class {
     constructor(canvas2) {
@@ -1181,6 +1594,26 @@
   ];
   var skills_default = SKILL_DATA;
 
+  // src/Utils/SpriteUtil.js
+  function drawFrame(ctx, img, frameW, frameH, col, row, dx, dy, dw, dh, flipX) {
+    if (!img) return false;
+    dw = dw || frameW;
+    dh = dh || frameH;
+    const sx = col * frameW;
+    const sy = row * frameH;
+    ctx.save();
+    ctx.translate(dx, dy);
+    if (flipX) ctx.scale(-1, 1);
+    ctx.drawImage(img, sx, sy, frameW, frameH, -dw / 2, -dh / 2, dw, dh);
+    ctx.restore();
+    return true;
+  }
+  function drawIcon(ctx, img, cx, cy, size) {
+    if (!img) return false;
+    ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+    return true;
+  }
+
   // src/UI/CharacterSelectUI.js
   function stars(n, max = 5) {
     let s = "";
@@ -1387,22 +1820,33 @@
       ctx.arc(0, 40, 120, 0, Math.PI * 2);
       ctx.fill();
       this._drawPortrait(ctx, char, this.time);
-      if (selected) {
-        ctx.fillStyle = "rgba(0,0,0,0.45)";
-        roundRect(ctx, -54, 118, 108, 20, 6);
-        ctx.fill();
-        ctx.fillStyle = "#8b9cb3";
-        ctx.font = "10px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("\u7ACB\u7ED8\u4F4D \xB7 \u53EF\u66FF\u6362", 0, 128);
-      }
       ctx.restore();
     }
-    /** 程序化职业立绘（后续可替换为 3D/贴图） */
+    /** 职业立绘：优先精灵表 Idle，失败回退程序化绘制 */
     _drawPortrait(ctx, char, time) {
       const bob = Math.sin(time * 2.5) * 3;
       ctx.save();
       ctx.translate(0, bob);
+      const sheet = AssetLoader_default.character(char.id);
+      if (sheet && sheet.img) {
+        const anim = sheet.meta.animations.idle || sheet.meta.animations.walk;
+        const frame = Math.floor(time * (anim.fps || 6)) % anim.frames;
+        drawFrame(
+          ctx,
+          sheet.img,
+          sheet.meta.frameWidth,
+          sheet.meta.frameHeight,
+          frame,
+          anim.row,
+          0,
+          10,
+          150,
+          150,
+          false
+        );
+        ctx.restore();
+        return;
+      }
       if (char.model === "druid") {
         ctx.fillStyle = char.accent;
         ctx.beginPath();
@@ -1568,10 +2012,12 @@
       const skill = skills_default[startId];
       const sy = y + rows.length * 18 + 10;
       if (skill && sy < this.startBtn.y - 20) {
+        const skillImg = AssetLoader_default.skillIcon(startId);
+        if (skillImg) drawIcon(ctx, skillImg, w / 2 - 72, sy, 28);
         ctx.textAlign = "center";
         ctx.fillStyle = "#ffd24a";
         ctx.font = 'bold 12px "Microsoft YaHei", sans-serif';
-        ctx.fillText(`\u521D\u59CB\u6280\u80FD\uFF1A${skill.name}`, w / 2, sy);
+        ctx.fillText(`\u521D\u59CB\u6280\u80FD\uFF1A${skill.name}`, w / 2 + (skillImg ? 14 : 0), sy);
         ctx.fillStyle = "#8b9cb3";
         ctx.font = '11px "Microsoft YaHei", sans-serif';
         ctx.fillText(skill.desc, w / 2, sy + 16);
@@ -2311,9 +2757,19 @@
       this.equipment = {};
       this.kills = 0;
       this._passiveIds = /* @__PURE__ */ new Set();
+      this.anim = "idle";
+      this.animTime = 0;
+      this.attackTimer = 0;
     }
     get maxHp() {
       return this.stats.final.maxHp;
+    }
+    /** 技能命中时触发攻击动画 */
+    triggerAttack() {
+      if (!this.alive) return;
+      this.attackTimer = 0.32;
+      this.anim = "attack";
+      this.animTime = 0;
     }
     update(dt, joystick) {
       if (joystick.active && joystick.mag > 0.05) {
@@ -2336,6 +2792,20 @@
       }
       if (this.invincible > 0) this.invincible -= dt;
       if (this.hurtFlash > 0) this.hurtFlash -= dt;
+      if (!this.alive) {
+        if (this.anim !== "death") {
+          this.anim = "death";
+          this.animTime = 0;
+        }
+      } else if (this.attackTimer > 0) {
+        this.attackTimer -= dt;
+        this.anim = "attack";
+      } else if (this.moving) {
+        this.anim = "walk";
+      } else {
+        this.anim = "idle";
+      }
+      this.animTime += dt;
     }
     takeDamage(amount) {
       if (!this.alive) return false;
@@ -2347,6 +2817,8 @@
       if (this.hp <= 0) {
         this.hp = 0;
         this.alive = false;
+        this.anim = "death";
+        this.animTime = 0;
       }
       return true;
     }
@@ -2384,9 +2856,38 @@
     render(ctx, camera) {
       const sx = camera.worldToScreenX(this.x);
       const sy = camera.worldToScreenY(this.y);
+      const flashing = this.hurtFlash > 0 && (this.hurtFlash * 20 | 0) % 2 === 0;
+      const sheet = AssetLoader_default.character(this.classId);
+      if (sheet && sheet.img) {
+        const animDef = sheet.meta.animations[this.anim] || sheet.meta.animations.idle;
+        let frame = Math.floor(this.animTime * animDef.fps) % animDef.frames;
+        if (this.anim === "death") {
+          frame = Math.min(animDef.frames - 1, Math.floor(this.animTime * animDef.fps));
+        }
+        const flip = Math.cos(this.facing) < 0;
+        const size = 56;
+        if (flashing) ctx.globalAlpha = 0.55;
+        drawFrame(
+          ctx,
+          sheet.img,
+          sheet.meta.frameWidth,
+          sheet.meta.frameHeight,
+          frame,
+          animDef.row,
+          sx,
+          sy,
+          size,
+          size,
+          flip
+        );
+        ctx.globalAlpha = 1;
+        return;
+      }
+      this._renderFallback(ctx, sx, sy, flashing);
+    }
+    _renderFallback(ctx, sx, sy, flashing) {
       const r = this.stats.final.radius;
       const bobY = this.moving ? Math.sin(this.bob) * 2 : 0;
-      const flashing = this.hurtFlash > 0 && (this.hurtFlash * 20 | 0) % 2 === 0;
       const color = flashing ? "#ffffff" : this.classData.color;
       ctx.save();
       ctx.translate(sx, sy + bobY);
@@ -2408,14 +2909,6 @@
         ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
-        ctx.strokeStyle = "#2a3a18";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-r * 0.25, -r * 0.55);
-        ctx.lineTo(-r * 0.45, -r * 1.05);
-        ctx.moveTo(r * 0.25, -r * 0.55);
-        ctx.lineTo(r * 0.45, -r * 1.05);
-        ctx.stroke();
       } else if (model === "hunter") {
         ctx.fillStyle = flashing ? "#fff" : this.classData.accent || "#1e4a78";
         ctx.beginPath();
@@ -2428,15 +2921,6 @@
         ctx.arc(0, 0, r * 0.68, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
-        ctx.strokeStyle = "#dfefff";
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(r * 0.55, 0, r * 0.9, -1, 1);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(r * 0.55, -r * 0.85);
-        ctx.lineTo(r * 0.55, r * 0.85);
-        ctx.stroke();
       } else {
         ctx.fillStyle = flashing ? "#fff" : this.classData.accent || "#5a2088";
         ctx.beginPath();
@@ -2448,16 +2932,6 @@
         ctx.beginPath();
         ctx.arc(0, -r * 0.15, r * 0.62, 0, Math.PI * 2);
         ctx.fillStyle = color;
-        ctx.fill();
-        ctx.strokeStyle = "#e0b3ff";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(r * 0.7, r * 0.8);
-        ctx.lineTo(r * 0.85, -r * 1.2);
-        ctx.stroke();
-        ctx.fillStyle = "#ffb04a";
-        ctx.beginPath();
-        ctx.arc(r * 0.85, -r * 1.35, r * 0.28, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
@@ -2484,6 +2958,9 @@
       this.equipment = {};
       this.kills = 0;
       this._passiveIds = /* @__PURE__ */ new Set();
+      this.anim = "idle";
+      this.animTime = 0;
+      this.attackTimer = 0;
     }
   };
   var Player_default = Player;
@@ -2689,6 +3166,7 @@
       this.knockX = 0;
       this.knockY = 0;
       this.phase = 0;
+      this.faceLeft = false;
       this.tickCd = null;
       this.boss = null;
     }
@@ -2892,6 +3370,12 @@
     const sx = camera.worldToScreenX(e.x);
     const sy = camera.worldToScreenY(e.y);
     const r = e.radius;
+    if (drawEnemySprite(ctx, e, sx, sy, r, time)) {
+      if (e.isElite && !e.isBoss) {
+        drawMiniHpBar(ctx, sx, sy - r - 10, r * 2, e.hp / e.maxHp);
+      }
+      return;
+    }
     const wob = Math.sin(time * 6 + e.phase) * (r * 0.06);
     ctx.save();
     ctx.translate(sx, sy);
@@ -2940,6 +3424,49 @@
     if (e.isElite && !e.isBoss) {
       drawMiniHpBar(ctx, sx, sy - r - 10, r * 2, e.hp / e.maxHp);
     }
+  }
+  function drawEnemySprite(ctx, e, sx, sy, r, time) {
+    const prefer = e.isBoss ? "idle" : "walk";
+    const sheet = AssetLoader_default.enemySheet(e.id, prefer) || AssetLoader_default.enemySheet(e.id, "walk") || AssetLoader_default.enemySheet(e.id, "idle") || AssetLoader_default.enemySheet(e.id, "portrait");
+    if (!sheet) return false;
+    const frame = Math.floor(time * sheet.fps + (e.phase || 0)) % sheet.frames;
+    const size = r * 2.6;
+    const flash = e.hitFlash > 0 && (e.hitFlash * 20 | 0) % 2 === 0;
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(sx, sy + r * 0.85, r * 0.8, r * 0.3, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.fill();
+    if (e.slowT > 0) {
+      ctx.beginPath();
+      ctx.arc(sx, sy, r * 1.25, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(120,200,255,0.18)";
+      ctx.fill();
+    }
+    if (flash) ctx.globalAlpha = 0.55;
+    drawFrame(
+      ctx,
+      sheet.img,
+      sheet.frameW,
+      sheet.frameH,
+      frame,
+      0,
+      sx,
+      sy,
+      size,
+      size,
+      !!e.faceLeft
+    );
+    ctx.globalAlpha = 1;
+    if (e.isElite && e.eliteTint) {
+      ctx.beginPath();
+      ctx.arc(sx, sy, r * 1.05, 0, Math.PI * 2);
+      ctx.strokeStyle = e.eliteTint;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+    ctx.restore();
+    return true;
   }
   function drawMiniHpBar(ctx, x, y, w, pct) {
     const h = 4;
@@ -3415,6 +3942,7 @@
           e.x += dx / d * spd * dt;
           e.y += dy / d * spd * dt;
         }
+        e.faceLeft = dx < 0;
         if (e.knockX !== 0 || e.knockY !== 0) {
           e.x += e.knockX * dt;
           e.y += e.knockY * dt;
@@ -3870,8 +4398,12 @@
         skill.cooldownTimer -= dt;
         if (skill.cooldownTimer <= 0) {
           const fired = this._execute(skill);
-          if (fired) skill.cooldownTimer = skill.effectiveCooldown(atkSpeed);
-          else skill.cooldownTimer = 0.1;
+          if (fired) {
+            skill.cooldownTimer = skill.effectiveCooldown(atkSpeed);
+            if (skill.type !== "aura_ring") this.player.triggerAttack();
+          } else {
+            skill.cooldownTimer = 0.1;
+          }
         }
       }
       this._updateZones(dt);
@@ -4981,15 +5513,23 @@
       const pad = 16;
       const barW = this.w - pad * 2 - 70;
       const hpY = top;
-      this._bar(ctx, pad, hpY, barW, 18, player.hp / player.maxHp, "#3a0d10", "#e23b3b", "#ff7a6a");
+      const hpIcon = AssetLoader_default.ui("hp");
+      const barPad = hpIcon ? pad + 28 : pad;
+      const barWidth = hpIcon ? barW - 28 : barW;
+      if (hpIcon) drawIcon(ctx, hpIcon, pad + 10, hpY + 9, 22);
+      this._bar(ctx, barPad, hpY, barWidth, 18, player.hp / player.maxHp, "#3a0d10", "#e23b3b", "#ff7a6a");
       ctx.fillStyle = "#fff";
       ctx.font = "bold 12px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(`${Math.ceil(player.hp)}/${Math.round(player.maxHp)}`, pad + barW / 2, hpY + 9);
+      ctx.fillText(`${Math.ceil(player.hp)}/${Math.round(player.maxHp)}`, barPad + barWidth / 2, hpY + 9);
       const expY = hpY + 24;
       const expPct = player.expToNext > 0 ? player.exp / player.expToNext : 0;
-      this._bar(ctx, pad, expY, barW, 12, expPct, "#0d2038", "#2b7fff", "#7cc4ff");
+      const expIcon = AssetLoader_default.ui("exp");
+      const expPad = expIcon ? pad + 28 : pad;
+      const expWidth = expIcon ? barW - 28 : barW;
+      if (expIcon) drawIcon(ctx, expIcon, pad + 10, expY + 6, 20);
+      this._bar(ctx, expPad, expY, expWidth, 12, expPct, "#0d2038", "#2b7fff", "#7cc4ff");
       ctx.fillStyle = "#1a1d26";
       ctx.strokeStyle = "#b3121f";
       ctx.lineWidth = 2;
@@ -5025,6 +5565,11 @@
     }
     _pauseButton(ctx) {
       const b = this.pauseBtn;
+      const pauseImg = AssetLoader_default.ui("pause");
+      if (pauseImg) {
+        drawIcon(ctx, pauseImg, b.x, b.y, b.r * 2);
+        return;
+      }
       ctx.fillStyle = "rgba(20,22,30,0.7)";
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
@@ -5051,13 +5596,20 @@
         ctx.strokeStyle = s.color;
         ctx.lineWidth = 2;
         ctx.stroke();
-        ctx.fillStyle = s.color;
-        ctx.font = "bold 16px sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(s.icon, x + size / 2, y + size / 2 - 2);
+        const iconImg = s.id ? AssetLoader_default.skillIcon(s.id) : null;
+        if (iconImg) {
+          drawIcon(ctx, iconImg, x + size / 2, y + size / 2 - 2, size - 8);
+        } else {
+          ctx.fillStyle = s.color;
+          ctx.font = "bold 16px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(s.icon, x + size / 2, y + size / 2 - 2);
+        }
         ctx.fillStyle = "#ffd24a";
         ctx.font = "bold 9px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
         ctx.fillText("Lv" + s.level, x + size / 2, y + size - 6);
         x += size + gap;
       }
@@ -5182,12 +5734,17 @@
       ctx.strokeStyle = option.color;
       ctx.lineWidth = 1.5;
       ctx.stroke();
-      ctx.fillStyle = option.color;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = `bold ${iconSize * 0.5}px "Microsoft YaHei", sans-serif`;
-      const icon = option.kind === "skill" ? SKILL_ICONS[option.id] || "\u6280" : option.kind === "heal" ? "\u6CBB" : "\u5F3A";
-      ctx.fillText(icon, ix + iconSize / 2, iy + iconSize / 2);
+      const iconImg = option.kind === "skill" ? AssetLoader_default.skillIcon(option.id) : null;
+      if (iconImg) {
+        drawIcon(ctx, iconImg, ix + iconSize / 2, iy + iconSize / 2, iconSize - 8);
+      } else {
+        ctx.fillStyle = option.color;
+        ctx.font = `bold ${iconSize * 0.5}px "Microsoft YaHei", sans-serif`;
+        const icon = option.kind === "skill" ? SKILL_ICONS[option.id] || "\u6280" : option.kind === "heal" ? "\u6CBB" : "\u5F3A";
+        ctx.fillText(icon, ix + iconSize / 2, iy + iconSize / 2);
+      }
       const tx = ix + iconSize + 16;
       ctx.textAlign = "left";
       ctx.fillStyle = "#fff";
@@ -5570,6 +6127,7 @@
       const skills = [];
       for (const skill of this.skillSystem.skills.values()) {
         skills.push({
+          id: skill.id,
           icon: SKILL_ICONS[skill.id] || "\u6280",
           level: skill.level,
           color: skill.def.color
@@ -5862,12 +6420,22 @@
 
   // src/main.js
   var game = null;
-  function boot() {
+  var booting = null;
+  async function boot() {
     if (game) return game;
-    const canvas2 = Platform_default.getCanvas();
-    game = new Game(canvas2);
-    game.start();
-    return game;
+    if (booting) return booting;
+    booting = (async () => {
+      try {
+        await AssetLoader_default.preload();
+      } catch (err) {
+        console.warn("[HellRift] \u7D20\u6750\u9884\u52A0\u8F7D\u5F02\u5E38\uFF0C\u5C06\u4F7F\u7528\u7A0B\u5E8F\u5316\u7ED8\u5236", err);
+      }
+      const canvas2 = Platform_default.getCanvas();
+      game = new Game(canvas2);
+      game.start();
+      return game;
+    })();
+    return booting;
   }
 
   // src/wechat-entry.js
@@ -5876,7 +6444,9 @@
     if (typeof GameGlobal !== "undefined") {
       GameGlobal.canvas = canvas2;
     }
-    boot();
+    boot().catch((err) => {
+      console.error("[HellRift] \u542F\u52A8\u5931\u8D25", err);
+    });
   } catch (err) {
     console.error("[HellRift] \u542F\u52A8\u5931\u8D25", err);
   }

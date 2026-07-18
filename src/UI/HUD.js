@@ -7,6 +7,8 @@
  */
 
 import { formatTime } from './UIHelpers.js';
+import Assets from '../Utils/AssetLoader.js';
+import { drawIcon } from '../Utils/SpriteUtil.js';
 
 export class HUD {
   constructor() {
@@ -37,19 +39,27 @@ export class HUD {
     const pad = 16;
     const barW = this.w - pad * 2 - 70;
 
-    // 生命条
+    // 生命条（左侧可选生命图标贴图）
     const hpY = top;
-    this._bar(ctx, pad, hpY, barW, 18, player.hp / player.maxHp, '#3a0d10', '#e23b3b', '#ff7a6a');
+    const hpIcon = Assets.ui('hp');
+    const barPad = hpIcon ? pad + 28 : pad;
+    const barWidth = hpIcon ? barW - 28 : barW;
+    if (hpIcon) drawIcon(ctx, hpIcon, pad + 10, hpY + 9, 22);
+    this._bar(ctx, barPad, hpY, barWidth, 18, player.hp / player.maxHp, '#3a0d10', '#e23b3b', '#ff7a6a');
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`${Math.ceil(player.hp)}/${Math.round(player.maxHp)}`, pad + barW / 2, hpY + 9);
+    ctx.fillText(`${Math.ceil(player.hp)}/${Math.round(player.maxHp)}`, barPad + barWidth / 2, hpY + 9);
 
     // 经验条
     const expY = hpY + 24;
     const expPct = player.expToNext > 0 ? player.exp / player.expToNext : 0;
-    this._bar(ctx, pad, expY, barW, 12, expPct, '#0d2038', '#2b7fff', '#7cc4ff');
+    const expIcon = Assets.ui('exp');
+    const expPad = expIcon ? pad + 28 : pad;
+    const expWidth = expIcon ? barW - 28 : barW;
+    if (expIcon) drawIcon(ctx, expIcon, pad + 10, expY + 6, 20);
+    this._bar(ctx, expPad, expY, expWidth, 12, expPct, '#0d2038', '#2b7fff', '#7cc4ff');
 
     // 等级徽章
     ctx.fillStyle = '#1a1d26';
@@ -95,6 +105,11 @@ export class HUD {
 
   _pauseButton(ctx) {
     const b = this.pauseBtn;
+    const pauseImg = Assets.ui('pause');
+    if (pauseImg) {
+      drawIcon(ctx, pauseImg, b.x, b.y, b.r * 2);
+      return;
+    }
     ctx.fillStyle = 'rgba(20,22,30,0.7)';
     ctx.beginPath();
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
@@ -122,15 +137,20 @@ export class HUD {
       ctx.strokeStyle = s.color;
       ctx.lineWidth = 2;
       ctx.stroke();
-      // 技能标记（首字）
-      ctx.fillStyle = s.color;
-      ctx.font = 'bold 16px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(s.icon, x + size / 2, y + size / 2 - 2);
-      // 等级点
+      const iconImg = s.id ? Assets.skillIcon(s.id) : null;
+      if (iconImg) {
+        drawIcon(ctx, iconImg, x + size / 2, y + size / 2 - 2, size - 8);
+      } else {
+        ctx.fillStyle = s.color;
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(s.icon, x + size / 2, y + size / 2 - 2);
+      }
       ctx.fillStyle = '#ffd24a';
       ctx.font = 'bold 9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.fillText('Lv' + s.level, x + size / 2, y + size - 6);
       x += size + gap;
     }

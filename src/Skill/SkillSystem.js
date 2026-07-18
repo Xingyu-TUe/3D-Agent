@@ -84,8 +84,13 @@ export class SkillSystem {
       skill.cooldownTimer -= dt;
       if (skill.cooldownTimer <= 0) {
         const fired = this._execute(skill);
-        if (fired) skill.cooldownTimer = skill.effectiveCooldown(atkSpeed);
-        else skill.cooldownTimer = 0.1;
+        if (fired) {
+          skill.cooldownTimer = skill.effectiveCooldown(atkSpeed);
+          // 光环持续 tick 不刷攻击动画，离散施法触发贴图 Attack 行
+          if (skill.type !== 'aura_ring') this.player.triggerAttack();
+        } else {
+          skill.cooldownTimer = 0.1;
+        }
       }
     }
     this._updateZones(dt);

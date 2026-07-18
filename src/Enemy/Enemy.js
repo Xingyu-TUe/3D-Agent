@@ -40,8 +40,9 @@ export class Enemy {
     this.knockX = 0;
     this.knockY = 0;
 
-    // 动画相位
+    // 动画相位 / 朝向
     this.phase = 0;
+    this.faceLeft = false;
 
     // 命中去重（用于穿透弹/光环 tick）：mapping skillInstanceId -> nextTickTime 由系统维护
     this.tickCd = null;

@@ -1,12 +1,15 @@
 /**
  * Player.js
- * 玩家实体。职业数据来自 Config/Character（德鲁伊 / 猎人 / 法师）。
+ * 玩家实体。优先使用 Assets 精灵表渲染（Idle/Walk/Attack/Death），
+ * 贴图未就绪时回退程序化绘制。
  */
 
 import Stats from './Stats.js';
 import { getCharacter, getDefaultCharacterId } from '../Config/Character.js';
 import GameConfig from '../Config/GameConfig.js';
 import { clamp } from '../Utils/MathUtils.js';
+import Assets from '../Utils/AssetLoader.js';
+import { drawFrame } from '../Utils/SpriteUtil.js';
 
 export class Player {
   constructor(classId) {
@@ -35,10 +38,23 @@ export class Player {
     this.equipment = {};
     this.kills = 0;
     this._passiveIds = new Set();
+
+    // 动画
+    this.anim = 'idle';
+    this.animTime = 0;
+    this.attackTimer = 0;
   }
 
   get maxHp() {
     return this.stats.final.maxHp;
+  }
+
+  /** 技能命中时触发攻击动画 */
+  triggerAttack() {
+    if (!this.alive) return;
+    this.attackTimer = 0.32;
+    this.anim = 'attack';
+    this.animTime = 0;
   }
 
   update(dt, joystick) {
@@ -64,6 +80,22 @@ export class Player {
     }
     if (this.invincible > 0) this.invincible -= dt;
     if (this.hurtFlash > 0) this.hurtFlash -= dt;
+
+    // 动画状态机
+    if (!this.alive) {
+      if (this.anim !== 'death') {
+        this.anim = 'death';
+        this.animTime = 0;
+      }
+    } else if (this.attackTimer > 0) {
+      this.attackTimer -= dt;
+      this.anim = 'attack';
+    } else if (this.moving) {
+      this.anim = 'walk';
+    } else {
+      this.anim = 'idle';
+    }
+    this.animTime += dt;
   }
 
   takeDamage(amount) {
@@ -76,6 +108,8 @@ export class Player {
     if (this.hp <= 0) {
       this.hp = 0;
       this.alive = false;
+      this.anim = 'death';
+      this.animTime = 0;
     }
     return true;
   }
@@ -87,9 +121,7 @@ export class Player {
     }
   }
 
-  addExp(amount) {
-    this.exp += amount;
-  }
+  addExp(amount) { this.exp += amount; }
 
   applyPassive(passive) {
     this.stats.addStat(passive.stat, passive.add);
@@ -120,21 +152,44 @@ export class Player {
   render(ctx, camera) {
     const sx = camera.worldToScreenX(this.x);
     const sy = camera.worldToScreenY(this.y);
+    const flashing = this.hurtFlash > 0 && ((this.hurtFlash * 20) | 0) % 2 === 0;
+
+    // 优先贴图
+    const sheet = Assets.character(this.classId);
+    if (sheet && sheet.img) {
+      const animDef = sheet.meta.animations[this.anim] || sheet.meta.animations.idle;
+      let frame = Math.floor(this.animTime * animDef.fps) % animDef.frames;
+      if (this.anim === 'death') {
+        frame = Math.min(animDef.frames - 1, Math.floor(this.animTime * animDef.fps));
+      }
+      const flip = Math.cos(this.facing) < 0;
+      const size = 56;
+      if (flashing) ctx.globalAlpha = 0.55;
+      drawFrame(
+        ctx, sheet.img,
+        sheet.meta.frameWidth, sheet.meta.frameHeight,
+        frame, animDef.row,
+        sx, sy, size, size, flip,
+      );
+      ctx.globalAlpha = 1;
+      return;
+    }
+
+    // 回退：程序化绘制
+    this._renderFallback(ctx, sx, sy, flashing);
+  }
+
+  _renderFallback(ctx, sx, sy, flashing) {
     const r = this.stats.final.radius;
     const bobY = this.moving ? Math.sin(this.bob) * 2 : 0;
-    const flashing = this.hurtFlash > 0 && ((this.hurtFlash * 20) | 0) % 2 === 0;
     const color = flashing ? '#ffffff' : this.classData.color;
-
     ctx.save();
     ctx.translate(sx, sy + bobY);
-
     ctx.beginPath();
     ctx.ellipse(0, r * 0.9, r * 0.9, r * 0.35, 0, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.fill();
-
     ctx.rotate(this.facing + Math.PI / 2);
-
     const model = this.classData.model || this.classId;
     if (model === 'druid') {
       ctx.fillStyle = flashing ? '#fff' : (this.classData.accent || '#2f6b28');
@@ -148,14 +203,6 @@ export class Player {
       ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
-      ctx.strokeStyle = '#2a3a18';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-r * 0.25, -r * 0.55);
-      ctx.lineTo(-r * 0.45, -r * 1.05);
-      ctx.moveTo(r * 0.25, -r * 0.55);
-      ctx.lineTo(r * 0.45, -r * 1.05);
-      ctx.stroke();
     } else if (model === 'hunter') {
       ctx.fillStyle = flashing ? '#fff' : (this.classData.accent || '#1e4a78');
       ctx.beginPath();
@@ -168,17 +215,7 @@ export class Player {
       ctx.arc(0, 0, r * 0.68, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
-      ctx.strokeStyle = '#dfefff';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(r * 0.55, 0, r * 0.9, -1.0, 1.0);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(r * 0.55, -r * 0.85);
-      ctx.lineTo(r * 0.55, r * 0.85);
-      ctx.stroke();
     } else {
-      // mage
       ctx.fillStyle = flashing ? '#fff' : (this.classData.accent || '#5a2088');
       ctx.beginPath();
       ctx.moveTo(0, -r * 0.9);
@@ -190,18 +227,7 @@ export class Player {
       ctx.arc(0, -r * 0.15, r * 0.62, 0, Math.PI * 2);
       ctx.fillStyle = color;
       ctx.fill();
-      ctx.strokeStyle = '#e0b3ff';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(r * 0.7, r * 0.8);
-      ctx.lineTo(r * 0.85, -r * 1.2);
-      ctx.stroke();
-      ctx.fillStyle = '#ffb04a';
-      ctx.beginPath();
-      ctx.arc(r * 0.85, -r * 1.35, r * 0.28, 0, Math.PI * 2);
-      ctx.fill();
     }
-
     ctx.restore();
   }
 
@@ -227,6 +253,9 @@ export class Player {
     this.equipment = {};
     this.kills = 0;
     this._passiveIds = new Set();
+    this.anim = 'idle';
+    this.animTime = 0;
+    this.attackTimer = 0;
   }
 }
 

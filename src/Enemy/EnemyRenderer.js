@@ -1,14 +1,26 @@
 /**
  * EnemyRenderer.js
- * 怪物程序化绘制（无需美术素材，全部用 Canvas 图元）。
+ * 怪物绘制：优先 Assets 贴图（walk/idle 条带），失败回退程序化图元。
  * 按 shape 分派：skeleton / ghoul / hound / mage / knight / boss。
  * 支持受击白闪、精英金边、减速蓝晕。
  */
+
+import Assets from '../Utils/AssetLoader.js';
+import { drawFrame } from '../Utils/SpriteUtil.js';
 
 export function drawEnemy(ctx, e, camera, time) {
   const sx = camera.worldToScreenX(e.x);
   const sy = camera.worldToScreenY(e.y);
   const r = e.radius;
+
+  // 优先贴图
+  if (drawEnemySprite(ctx, e, sx, sy, r, time)) {
+    if (e.isElite && !e.isBoss) {
+      drawMiniHpBar(ctx, sx, sy - r - 10, r * 2, e.hp / e.maxHp);
+    }
+    return;
+  }
+
   const wob = Math.sin(time * 6 + e.phase) * (r * 0.06);
 
   ctx.save();
@@ -56,6 +68,54 @@ export function drawEnemy(ctx, e, camera, time) {
   if (e.isElite && !e.isBoss) {
     drawMiniHpBar(ctx, sx, sy - r - 10, r * 2, e.hp / e.maxHp);
   }
+}
+
+/** @returns {boolean} 是否已用贴图绘制 */
+function drawEnemySprite(ctx, e, sx, sy, r, time) {
+  const prefer = e.isBoss ? 'idle' : 'walk';
+  const sheet = Assets.enemySheet(e.id, prefer)
+    || Assets.enemySheet(e.id, 'walk')
+    || Assets.enemySheet(e.id, 'idle')
+    || Assets.enemySheet(e.id, 'portrait');
+  if (!sheet) return false;
+
+  const frame = Math.floor(time * sheet.fps + (e.phase || 0)) % sheet.frames;
+  const size = r * 2.6;
+  const flash = e.hitFlash > 0 && ((e.hitFlash * 20) | 0) % 2 === 0;
+
+  ctx.save();
+  // 阴影
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + r * 0.85, r * 0.8, r * 0.3, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fill();
+
+  if (e.slowT > 0) {
+    ctx.beginPath();
+    ctx.arc(sx, sy, r * 1.25, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(120,200,255,0.18)';
+    ctx.fill();
+  }
+
+  if (flash) ctx.globalAlpha = 0.55;
+  drawFrame(
+    ctx, sheet.img,
+    sheet.frameW, sheet.frameH,
+    frame, 0,
+    sx, sy, size, size,
+    !!e.faceLeft,
+  );
+  ctx.globalAlpha = 1;
+
+  if (e.isElite && e.eliteTint) {
+    ctx.beginPath();
+    ctx.arc(sx, sy, r * 1.05, 0, Math.PI * 2);
+    ctx.strokeStyle = e.eliteTint;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+  ctx.restore();
+  return true;
 }
 
 function drawMiniHpBar(ctx, x, y, w, pct) {

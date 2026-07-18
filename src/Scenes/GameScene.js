@@ -300,6 +300,7 @@ export class GameScene {
     const skills = [];
     for (const skill of this.skillSystem.skills.values()) {
       skills.push({
+        id: skill.id,
         icon: SKILL_ICONS[skill.id] || '技',
         level: skill.level,
         color: skill.def.color,

@@ -43,10 +43,10 @@
   <canvas id="game"></canvas>
   <script type="module">
     import { boot } from './src/main.js';
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
       const el = document.getElementById('loading');
       try {
-        boot();
+        await boot();
         if (el) el.remove();
       } catch (e) {
         if (el) el.textContent = '启动失败: ' + e.message;
