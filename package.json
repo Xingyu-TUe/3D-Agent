@@ -8,6 +8,7 @@
     "start": "node scripts/dev-server.js",
     "check": "node scripts/check-syntax.js",
     "build:wechat": "node scripts/build-wechat.js",
+    "generate:assets": "node scripts/generate-assets.js",
     "test:sim": "node scripts/headless-sim.js"
   },
   "devDependencies": {
