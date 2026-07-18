@@ -73,26 +73,32 @@ async function main() {
       '地狱裂隙 Hell Rift — 微信使用说明',
       '',
       '【第一次导入】',
-      '1. 用微信开发者工具「新建小游戏」',
-      '2. 目录选择本文件夹（有 game.js / game.json，没有 src/）',
-      '3. AppID 选择「测试号」→ 创建 → 编译',
+      '1. 解压 HellRift.zip，得到 HellRift 文件夹',
+      '2. 确认该文件夹里能直接看到：game.js、game.json、project.config.json',
+      '   （不要选到上一级，也不要选到空文件夹）',
+      '3. 微信开发者工具 → 新建小游戏 → 目录选这个 HellRift 文件夹',
+      '4. AppID 选「测试号」→ 创建 → 编译',
       '',
-      '【以后更新 —— 不用重新导入！】',
-      '方式 A（推荐）：双击运行「更新游戏.bat」，成功后回开发者工具点「编译」',
-      '方式 B：浏览器打开下面链接，另存为覆盖本目录的 game.js，再点「编译」',
-      '  https://raw.githubusercontent.com/Xingyu-TUe/3D-Agent/cursor/hell-rift-wechat-game-b0ee/game.js',
+      '【报错「game.js 未找到」怎么修】',
+      '说明当前打开的目录里没有 game.js。任选其一：',
+      'A. 双击本目录「检查项目.bat」确认缺什么，再双击「更新游戏.bat」自动补全',
+      'B. 浏览器打开下面链接，另存为覆盖本目录 game.js，再点「编译」：',
+      '   https://cdn.jsdelivr.net/gh/Xingyu-TUe/3D-Agent@cursor/hell-rift-wechat-game-b0ee/game.js',
+      'C. 重新解压 zip，用开发者工具「导入项目」指向解压后的 HellRift',
       '',
-      '只要项目还开着，替换 game.js 后点编译即可，不必反复「下载 zip → 新建项目」。',
+      '【以后更新 —— 不用重新导入】',
+      '双击「更新游戏.bat」→ 回开发者工具点「编译」即可。',
       '',
       '本包为单文件打包版。鼠标按住模拟器左半屏 = 摇杆。',
       '',
     ].join('\n'),
   );
 
-  // 一键更新脚本（Windows）
-  const batSrc = path.join(root, 'scripts', 'wechat-update', '更新游戏.bat');
-  if (fs.existsSync(batSrc)) {
-    fs.copyFileSync(batSrc, path.join(wechatDir, '更新游戏.bat'));
+  // Windows 辅助脚本
+  const updateDir = path.join(root, 'scripts', 'wechat-update');
+  for (const name of ['更新游戏.bat', '检查项目.bat']) {
+    const src = path.join(updateDir, name);
+    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(wechatDir, name));
   }
 
   // 打 zip（临时用 HellRift 目录名）
