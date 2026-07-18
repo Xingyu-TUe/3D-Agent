@@ -5,11 +5,21 @@
     "enhance": true,
     "postcss": false,
     "minified": false,
-    "newFeature": true
+    "newFeature": true,
+    "ignoreDevUnusedFiles": false,
+    "ignoreUploadUnusedFiles": true
   },
   "appid": "wxHELLRIFT0000000",
   "projectname": "HellRift",
   "compileType": "game",
   "srcMiniprogramRoot": "./",
-  "miniprogramRoot": "./"
+  "miniprogramRoot": "./",
+  "packOptions": {
+    "ignore": [
+      { "type": "folder", "value": "scripts" },
+      { "type": "file", "value": "index.html" },
+      { "type": "file", "value": "package.json" },
+      { "type": "file", "value": "README.md" }
+    ]
+  }
 }
