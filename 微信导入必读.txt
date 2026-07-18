@@ -1,0 +1,32 @@
+地狱裂隙 — 微信开发者工具导入必读
+================================
+
+你现在如果看到控制台：
+  [Assets] 加载失败: Assets/ui/xxx.png
+  [Assets] 预加载 0/42
+以及一堆红色 FileUtils / PreCompile 报错 ——
+
+原因几乎一定是：打开了「源码仓库根目录」，而不是微信专用包。
+
+正确做法（任选其一）
+--------------------
+1）推荐：下载并解压 dist/HellRift.zip
+   用微信开发者工具打开解压后的 HellRift 文件夹
+   该文件夹里应直接看到：
+     game.js
+     game.json
+     project.config.json
+     Assets/          ← 必须有
+
+2）若已经打开了带 src/、index.html、package.json 的目录：
+   - 双击「修复Assets.bat」（会从 src\Assets 复制到 Assets\）
+   - 或手动把 src\Assets 整个文件夹复制到项目根，改名为 Assets
+   - 然后点「编译」
+
+3）一键更新：双击「更新游戏.bat」
+   会下载完整 zip，覆盖 game.js 和 Assets\
+
+不要做的事
+----------
+- 不要把整个 GitHub 仓库当小游戏目录长期使用
+- 不要只更新 game.js 却没有 Assets\

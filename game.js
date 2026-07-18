@@ -506,12 +506,17 @@
     if (typeof Image !== "undefined") return new Image();
     return null;
   }
+  function candidateBases() {
+    if (Platform_default.isWeChat) return ["Assets/", "src/Assets/"];
+    return ["src/Assets/", "Assets/"];
+  }
   var AssetLoader = class {
     constructor() {
       this.images = /* @__PURE__ */ new Map();
       this.manifest = manifestData_default;
       this.ready = false;
-      this.basePath = Platform_default.isWeChat ? "Assets/" : "src/Assets/";
+      this.basePath = candidateBases()[0];
+      this._warned = /* @__PURE__ */ new Set();
     }
     get(relPath) {
       return this.images.get(relPath) || null;
@@ -568,27 +573,43 @@
       const item = (this.manifest.tiles || []).find((u) => u.id === id);
       return item ? this.get(item.file) : null;
     }
-    loadImage(relPath) {
+    _tryLoad(relPath, base) {
       return new Promise((resolve) => {
-        if (this.images.has(relPath)) {
-          resolve(this.images.get(relPath));
-          return;
-        }
         const img = createImage();
         if (!img) {
           resolve(null);
           return;
         }
-        img.onload = () => {
-          this.images.set(relPath, img);
-          resolve(img);
+        let settled = false;
+        const done = (val) => {
+          if (settled) return;
+          settled = true;
+          resolve(val);
         };
-        img.onerror = () => {
-          console.warn("[Assets] \u52A0\u8F7D\u5931\u8D25:", this.basePath + relPath);
-          resolve(null);
-        };
-        img.src = this.basePath + relPath;
+        img.onload = () => done(img);
+        img.onerror = () => done(null);
+        setTimeout(() => done(null), 4e3);
+        img.src = base + relPath;
       });
+    }
+    async loadImage(relPath) {
+      if (this.images.has(relPath)) return this.images.get(relPath);
+      const bases = candidateBases();
+      for (const base of bases) {
+        const img = await this._tryLoad(relPath, base);
+        if (img) {
+          this.images.set(relPath, img);
+          this.basePath = base;
+          return img;
+        }
+      }
+      if (!this._warned.has(relPath)) {
+        this._warned.add(relPath);
+        if (this._warned.size <= 2) {
+          console.warn("[Assets] \u52A0\u8F7D\u5931\u8D25:", relPath, "\uFF08\u5DF2\u5C1D\u8BD5", bases.join(" / "), "\uFF09");
+        }
+      }
+      return null;
     }
     collectPaths() {
       const paths = /* @__PURE__ */ new Set();
@@ -608,11 +629,20 @@
     }
     async preload() {
       const paths = this.collectPaths();
-      await Promise.all(paths.map((p) => this.loadImage(p)));
+      if (paths.length) {
+        await this.loadImage(paths[0]);
+      }
+      await Promise.all(paths.slice(1).map((p) => this.loadImage(p)));
       let ok = 0;
       for (const p of paths) if (this.images.get(p)) ok++;
       this.ready = ok > 0;
-      console.log(`[Assets] \u9884\u52A0\u8F7D ${ok}/${paths.length}\uFF0Cbase=${this.basePath}`);
+      if (ok === 0) {
+        console.warn(
+          "[Assets] \u9884\u52A0\u8F7D 0/" + paths.length + "\u3002\u8BF7\u786E\u8BA4\u9879\u76EE\u76EE\u5F55\u91CC\u6709 Assets/ \u6587\u4EF6\u5939\uFF08\u4E0E game.js \u540C\u7EA7\uFF09\u3002\u6B63\u786E\u505A\u6CD5\uFF1A\u5BFC\u5165 dist/HellRift.zip \u89E3\u538B\u540E\u7684 HellRift \u76EE\u5F55\uFF0C\u4E0D\u8981\u6253\u5F00\u6574\u4E2A\u6E90\u7801\u4ED3\u5E93\u3002"
+        );
+      } else {
+        console.log(`[Assets] \u9884\u52A0\u8F7D ${ok}/${paths.length}\uFF0Cbase=${this.basePath}`);
+      }
       return this.ready;
     }
   };

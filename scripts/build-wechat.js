@@ -50,8 +50,12 @@ async function main() {
   // 贴图目录（运行时按 Assets/ 相对路径加载，不内联进 game.js）
   const assetsSrc = path.join(root, 'src', 'Assets');
   const assetsDst = path.join(wechatDir, 'Assets');
+  const assetsRoot = path.join(root, 'Assets');
   if (fs.existsSync(assetsSrc)) {
     fs.cpSync(assetsSrc, assetsDst, { recursive: true });
+    // 同步到仓库根，避免误开源码目录时找不到 Assets/
+    fs.rmSync(assetsRoot, { recursive: true, force: true });
+    fs.cpSync(assetsSrc, assetsRoot, { recursive: true });
   } else {
     console.warn('[HellRift] 缺少 src/Assets，请先 npm run generate:assets');
   }
@@ -82,35 +86,33 @@ async function main() {
       '地狱裂隙 Hell Rift — 微信使用说明',
       '',
       '【第一次导入】',
-      '1. 解压 HellRift.zip，得到 HellRift 文件夹',
-      '2. 确认该文件夹里能直接看到：game.js、game.json、project.config.json、Assets/',
-      '   （不要选到上一级，也不要选到空文件夹）',
-      '3. 微信开发者工具 → 新建小游戏 → 目录选这个 HellRift 文件夹',
-      '4. AppID 选「测试号」→ 创建 → 编译',
+      '1. 只下载 / 解压 dist/HellRift.zip（不要直接打开整个 GitHub 源码仓库）',
+      '2. 解压后得到 HellRift 文件夹，里面应直接看到：',
+      '     game.js   game.json   project.config.json   Assets/',
+      '3. 微信开发者工具 → 导入 / 新建小游戏 → 目录选这个 HellRift 文件夹',
+      '4. AppID 选「测试号」→ 编译',
       '',
-      '【报错「game.js 未找到」怎么修】',
-      '说明当前打开的目录里没有 game.js。任选其一：',
-      'A. 双击本目录「检查项目.bat」确认缺什么，再双击「更新游戏.bat」自动补全',
-      'B. 浏览器打开下面链接，另存为覆盖本目录 game.js，再点「编译」：',
-      '   https://cdn.jsdelivr.net/gh/Xingyu-TUe/3D-Agent@cursor/hell-rift-wechat-game-b0ee/game.js',
-      'C. 重新解压 zip，用开发者工具「导入项目」指向解压后的 HellRift',
+      '【控制台报 Assets 加载失败 / 预加载 0/42】',
+      '原因：当前打开的目录里没有 Assets/（常见于误开了带 src、index.html 的源码根目录）。',
+      '解决：',
+      'A. 关掉项目，重新导入 HellRift.zip 解压出的 HellRift 文件夹（推荐）',
+      'B. 若坚持用源码目录：双击「修复Assets.bat」，或把 src\\Assets 复制成根目录 Assets\\',
+      'C. 双击「更新游戏.bat」会同时拉 game.js + Assets',
       '',
-      '【贴图 Assets/】',
-      '角色/怪物/UI 贴图在 Assets/ 目录，必须与 game.js 同级。',
-      '只更新 game.js 不够时，请重新下载 HellRift.zip 覆盖整个文件夹。',
+      '【红色 FileUtils / PreCompile 一长串】',
+      '多半是打开了错误目录（整个仓库）。请只导入 HellRift.zip 那一层。',
       '',
-      '【以后更新 —— 不用重新导入】',
-      '双击「更新游戏.bat」→ 回开发者工具点「编译」即可。',
-      '若贴图也有更新，请重新解压 zip 覆盖 Assets/。',
+      '【以后更新】',
+      '双击「更新游戏.bat」→ 回开发者工具点「编译」。',
       '',
-      '本包为单文件打包版 + Assets 贴图。鼠标按住模拟器左半屏 = 摇杆。',
+      '本包 = 单文件 game.js + Assets 贴图。左半屏按住 = 摇杆。',
       '',
     ].join('\n'),
   );
 
   // Windows 辅助脚本
   const updateDir = path.join(root, 'scripts', 'wechat-update');
-  for (const name of ['更新游戏.bat', '检查项目.bat']) {
+  for (const name of ['更新游戏.bat', '检查项目.bat', '修复Assets.bat']) {
     const src = path.join(updateDir, name);
     if (fs.existsSync(src)) fs.copyFileSync(src, path.join(wechatDir, name));
   }
