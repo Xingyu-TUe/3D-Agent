@@ -4,6 +4,5 @@
   "networkTimeout": {
     "request": 10000
   },
-  "workers": "",
   "resizable": false
 }
