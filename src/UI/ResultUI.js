@@ -62,9 +62,11 @@ export class ResultUI {
 
     // 统计
     const stats = [
+      ['职业', d.className || '未知'],
       ['存活时间', formatTime(d.survived || 0)],
       ['达到等级', 'Lv.' + (d.level || 1)],
       ['击杀总数', String(d.kills || 0)],
+      ['获得金币', String(d.goldEarned || 0)],
     ];
     let sy = h * 0.5;
     ctx.font = '18px "Microsoft YaHei", sans-serif';

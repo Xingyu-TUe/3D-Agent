@@ -29,7 +29,7 @@ export class MenuScene {
 
   onTouchStart(id, x, y) {
     if (this.menu.hitStart(x, y)) {
-      this.game.scenes.switchTo('game');
+      this.game.scenes.switchTo('characterSelect');
     }
   }
 }

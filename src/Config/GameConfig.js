@@ -29,8 +29,8 @@ export const GameConfig = {
   },
 
   player: {
-    // 初始职业：流浪骑士
-    startClass: 'wanderKnight',
+    // 默认职业（可被角色选择覆盖）
+    startClass: 'druid',
     // 拾取经验的基础半径
     pickupRadius: 90,
     // 无敌帧时长（秒）

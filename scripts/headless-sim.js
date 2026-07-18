@@ -73,7 +73,7 @@ const { Game } = await import('../src/Game.js');
 const game = new Game(canvas);
 // 我们手动步进，不使用真实 raf 递归
 game.running = true;
-game.scenes.switchTo('menu');
+game.scenes.switchTo('characterSelect');
 
 function step(dt) {
   game.scenes.update(dt);
@@ -98,12 +98,21 @@ function guard(label, fn) {
   }
 }
 
-// 1) 主菜单渲染几帧
-guard('menu render', () => { for (let i = 0; i < 5; i++) step(DT); });
-
-// 2) 点击开始
-guard('tap start', () => tap(W / 2, H * 0.62));
-console.log('当前场景:', game.scenes.currentName);
+// 1) 角色选择界面渲染几帧，并切换到猎人再开始
+guard('character select', () => {
+  for (let i = 0; i < 5; i++) step(DT);
+  console.log('当前场景:', game.scenes.currentName);
+  // 点右箭头切到猎人，再点开始冒险
+  const sel = game.scenes.scenes.get('characterSelect');
+  if (sel) {
+    sel.ui.next();
+    sel.ui.next(); // mage or hunter depending on order: druid, hunter, mage
+    // 回到猎人
+    sel.ui.prev();
+    tap(sel.ui.startBtn.x + 10, sel.ui.startBtn.y + 10);
+  }
+});
+console.log('进入后场景:', game.scenes.currentName, '职业:', game.selectedClassId);
 
 const scene = game.scenes.scenes.get('game');
 

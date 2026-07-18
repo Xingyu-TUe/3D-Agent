@@ -9,6 +9,7 @@
  */
 
 import GameConfig from '../Config/GameConfig.js';
+import { getDefaultCharacterId } from '../Config/Character.js';
 import EventBus from '../Utils/EventBus.js';
 import Camera from '../Utils/Camera.js';
 import Background from '../Utils/Background.js';
@@ -16,9 +17,11 @@ import CollisionSystem from '../Utils/CollisionSystem.js';
 
 import Player from '../Player/Player.js';
 import ExpSystem from '../Player/ExpSystem.js';
+import CharacterSave from '../Player/CharacterSave.js';
 import EnemySystem from '../Enemy/EnemySystem.js';
 import BulletSystem from '../Bullet/BulletSystem.js';
 import SkillSystem from '../Skill/SkillSystem.js';
+import SummonSystem from '../Skill/SummonSystem.js';
 import UpgradeManager from '../Skill/UpgradeManager.js';
 import EffectSystem from '../FX/EffectSystem.js';
 
@@ -44,7 +47,11 @@ export class GameScene {
     this.expSystem = new ExpSystem(this.player, this.events);
     this.enemySystem = new EnemySystem(this.player, this.events, this.effects);
     this.bulletSystem = new BulletSystem(this.player, this.enemySystem, this.collision, this.effects, this.events);
-    this.skillSystem = new SkillSystem(this.player, this.enemySystem, this.bulletSystem, this.collision, this.effects, this.events);
+    this.summonSystem = new SummonSystem(this.player, this.enemySystem, this.collision, this.effects);
+    this.skillSystem = new SkillSystem(
+      this.player, this.enemySystem, this.bulletSystem,
+      this.collision, this.effects, this.events, this.summonSystem,
+    );
     this.upgradeManager = new UpgradeManager(this.skillSystem, this.player);
 
     // UI
@@ -80,9 +87,9 @@ export class GameScene {
       this.bossBar.triggerBanner();
     });
 
-    this.events.on('bossDead', (p) => {
-      // 胜利：掉落宝箱（装备预留系统）
+    this.events.on('bossDead', () => {
       this._grantChestLoot();
+      this.bossKilled = true;
       this.victory = true;
       this.finished = true;
       this.endTimer = 1.6;
@@ -105,7 +112,10 @@ export class GameScene {
     this.player.equip(item);
   }
 
-  enter() {
+  enter(params) {
+    this._classId = (params && params.classId)
+      || this.game.selectedClassId
+      || getDefaultCharacterId();
     this.reset();
   }
 
@@ -117,18 +127,22 @@ export class GameScene {
     this.finished = false;
     this.victory = false;
     this.endTimer = 0;
+    this.lastLoot = null;
+    this.bossKilled = false;
 
-    this.player.reset();
+    this.player.reset(this._classId);
     this.expSystem.clear();
     this.expSystem.player.expToNext = this.expSystem.expNeeded(1);
     this.enemySystem.clear();
     this.bulletSystem.clear();
+    this.summonSystem.clear();
     this.skillSystem.clear();
     this.effects.clear();
     this.upgradeManager.reset();
+    this.upgradeManager.setSkillPool(this.player.classData.skillPool || []);
     this.joystick.reset();
 
-    // 出生自带普通攻击
+    // 职业初始技能
     for (const id of this.player.classData.startSkills) {
       this.skillSystem.acquire(id);
     }
@@ -200,6 +214,7 @@ export class GameScene {
     // 技能（含普通攻击）
     if (!freezeSpawns) {
       this.skillSystem.update(dt, this.camera);
+      this.summonSystem.update(dt);
     }
 
     // 子弹
@@ -216,12 +231,25 @@ export class GameScene {
   }
 
   _goResult() {
+    const goldEarned = Math.floor(this.player.kills * 0.8 + (this.victory ? 200 : 0));
+    const classSave = CharacterSave.recordRun({
+      classId: this.player.classId,
+      survived: this.gameTime,
+      victory: this.victory,
+      kills: this.player.kills,
+      bossKilled: this.bossKilled,
+      goldEarned,
+    });
     this.game.scenes.switchTo('result', {
       victory: this.victory,
       survived: this.gameTime,
       level: this.player.level,
       kills: this.player.kills,
       loot: this.lastLoot,
+      classId: this.player.classId,
+      className: this.player.classData.name,
+      goldEarned,
+      classSave,
     });
   }
 
@@ -236,6 +264,8 @@ export class GameScene {
     this.expSystem.render(ctx, cam, this.time);
     // 怪物
     this.enemySystem.render(ctx, cam, this.time);
+    // 召唤物
+    this.summonSystem.render(ctx, cam, this.time);
     // 子弹
     this.bulletSystem.render(ctx, cam);
     // 特效

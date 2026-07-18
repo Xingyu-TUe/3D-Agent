@@ -15,8 +15,10 @@ import SceneManager from './SceneManager.js';
 import GameConfig from './Config/GameConfig.js';
 
 import MenuScene from './Scenes/MenuScene.js';
+import CharacterSelectScene from './Scenes/CharacterSelectScene.js';
 import GameScene from './Scenes/GameScene.js';
 import ResultScene from './Scenes/ResultScene.js';
+import { getDefaultCharacterId } from './Config/Character.js';
 
 export class Game {
   constructor(canvas) {
@@ -29,6 +31,7 @@ export class Game {
     this.safeArea = Platform.getSafeArea();
 
     this.scenes = new SceneManager(this);
+    this.selectedClassId = getDefaultCharacterId();
 
     this.running = false;
     this.lastTime = 0;
@@ -46,6 +49,7 @@ export class Game {
 
   _registerScenes() {
     this.scenes.register('menu', new MenuScene(this));
+    this.scenes.register('characterSelect', new CharacterSelectScene(this));
     this.scenes.register('game', new GameScene(this));
     this.scenes.register('result', new ResultScene(this));
   }
@@ -87,7 +91,8 @@ export class Game {
     if (this.running) return;
     this.running = true;
     this.lastTime = Platform.now();
-    this.scenes.switchTo('menu');
+    // 启动后直接进入角色选择大厅
+    this.scenes.switchTo('characterSelect');
     Platform.raf(this._loop);
   }
 

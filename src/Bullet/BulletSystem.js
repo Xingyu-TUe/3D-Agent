@@ -1,9 +1,6 @@
 /**
  * BulletSystem.js
  * 投射物系统：对象池管理 + 更新 + 与怪物碰撞（借助 CollisionSystem 四叉树）。
- * 命中后按技能规则处理穿透 / 爆炸，并把伤害转交 EnemySystem 结算。
- *
- * 伤害暴击判定统一在此处理（读取玩家属性）。
  */
 
 import ObjectPool from '../Utils/ObjectPool.js';
@@ -32,7 +29,8 @@ export class BulletSystem {
 
   _rollDamage(baseDamage, canCrit) {
     const s = this.player.stats.final;
-    let dmg = baseDamage * s.damageMul;
+    const atkCoef = (s.attack || 20) / 20;
+    let dmg = baseDamage * atkCoef * s.damageMul;
     let crit = false;
     if (canCrit && chance(s.critRate)) {
       dmg *= s.critDmg;
@@ -42,20 +40,20 @@ export class BulletSystem {
   }
 
   update(dt, camera) {
+    const nearestFn = (x, y) => this.collision.nearest(x, y, 500, null);
+
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
-      if (!b.update(dt)) {
+      if (!b.update(dt, b.homing ? nearestFn : null)) {
         this._release(i);
         continue;
       }
 
-      // 剔除离屏太远的子弹
       if (!camera.isVisible(b.x, b.y, 200)) {
         this._release(i);
         continue;
       }
 
-      // 碰撞查询
       const hits = this.collision.queryCircle(b.x, b.y, b.radius, this._hitBuf);
       for (let j = 0; j < hits.length; j++) {
         const e = hits[j];
@@ -63,12 +61,13 @@ export class BulletSystem {
         b.hitSet.add(e);
 
         if (b.explode) {
-          this._doExplode(b, e);
+          this._doExplode(b);
           b.active = false;
           break;
         } else {
           const { dmg, crit } = this._rollDamage(b.damage, b.canCrit);
           this.enemySystem.damageEnemy(e, dmg, crit, 40, b.x, b.y);
+          if (b.slow > 0) e.applySlow(1 - b.slow, b.slowDuration || 1);
           if (b.pierce > 0) {
             b.pierce--;
           } else {
@@ -82,7 +81,7 @@ export class BulletSystem {
     }
   }
 
-  _doExplode(b, centerEnemy) {
+  _doExplode(b) {
     this.effects.explosion(b.x, b.y, b.explodeRadius, b.color);
     this.events.emit('shake', { magnitude: 3, duration: 0.12 });
     const affected = this.collision.queryCircle(b.x, b.y, b.explodeRadius, []);

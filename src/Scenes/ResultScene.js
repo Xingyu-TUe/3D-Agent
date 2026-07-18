@@ -32,7 +32,7 @@ export class ResultScene {
 
   onTouchStart(id, x, y) {
     if (this.ui.hitBack(x, y)) {
-      this.game.scenes.switchTo('menu');
+      this.game.scenes.switchTo('characterSelect');
     }
   }
 }

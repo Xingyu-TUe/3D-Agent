@@ -46,9 +46,11 @@ export class Stats {
     f.critRate = Math.min(0.95, b.critRate + m.critRate);
     f.critDmg = b.critDmg + m.critDmg;
     f.lifesteal = b.lifesteal + m.lifesteal;
+    f.attack = b.damage; // 职业基础攻击，参与伤害系数
     f.damageMul = 1 + m.damageMul;
     f.moveSpeed = b.moveSpeed * (1 + m.moveSpeedMul);
-    f.atkSpeedMul = 1 + m.atkSpeedMul;   // 用于降低技能 CD
+    // 职业基础攻速 × 被动攻速加成
+    f.atkSpeedMul = (b.atkSpeed || 1) * (1 + m.atkSpeedMul);
     f.pickupRadius = b.pickupRadius * (1 + m.pickupMul);
     f.radius = b.radius;
     return f;

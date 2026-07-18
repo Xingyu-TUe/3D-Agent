@@ -1,7 +1,7 @@
 /**
  * Bullet.js
- * 投射物实体（对象池）。用于火球、飞剑等 projectile 类技能。
- * 支持穿透 pierce、命中爆炸 explode。
+ * 投射物实体（对象池）。用于火球、飞剑、箭矢等。
+ * 支持穿透 / 爆炸 / 追踪 / 命中减速。
  */
 
 export class Bullet {
@@ -22,8 +22,13 @@ export class Bullet {
     this.canCrit = true;
     this.angle = 0;
     this.skillId = '';
-    this.hitSet = null; // 已命中怪物集合（穿透去重）
+    this.hitSet = null;
     this.trail = 0;
+    this.homing = false;
+    this.turnRate = 0;
+    this.speed = 0;
+    this.slow = 0;
+    this.slowDuration = 0;
   }
 
   spawn(cfg) {
@@ -44,15 +49,37 @@ export class Bullet {
     this.hitSet = new Set();
     this.active = true;
     this.trail = 0;
+    this.homing = !!cfg.homing;
+    this.turnRate = cfg.turnRate || 0;
+    this.speed = cfg.speed || Math.sqrt(cfg.vx * cfg.vx + cfg.vy * cfg.vy);
+    this.slow = cfg.slow || 0;
+    this.slowDuration = cfg.slowDuration || 0;
     return this;
   }
 
   reset() {
     this.active = false;
     this.hitSet = null;
+    this.homing = false;
   }
 
-  update(dt) {
+  update(dt, nearestFn) {
+    if (this.homing && nearestFn) {
+      const target = nearestFn(this.x, this.y);
+      if (target) {
+        const desired = Math.atan2(target.y - this.y, target.x - this.x);
+        let diff = desired - this.angle;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        const maxTurn = this.turnRate * dt;
+        if (diff > maxTurn) diff = maxTurn;
+        if (diff < -maxTurn) diff = -maxTurn;
+        this.angle += diff;
+        this.vx = Math.cos(this.angle) * this.speed;
+        this.vy = Math.sin(this.angle) * this.speed;
+      }
+    }
+
     this.x += this.vx * dt;
     this.y += this.vy * dt;
     this.life -= dt;
@@ -69,7 +96,6 @@ export class Bullet {
     ctx.rotate(this.angle);
 
     if (this.explode) {
-      // 火球：发光球 + 拖尾
       const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius * 1.6);
       grad.addColorStop(0, '#fff0c0');
       grad.addColorStop(0.4, this.color);
@@ -79,14 +105,14 @@ export class Bullet {
       ctx.arc(0, 0, this.radius * 1.6, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      // 飞剑：细长发光刃
       ctx.shadowColor = this.color;
       ctx.shadowBlur = 8;
       ctx.fillStyle = this.color;
       ctx.beginPath();
-      ctx.moveTo(this.radius * 2, 0);
-      ctx.lineTo(-this.radius, -this.radius * 0.6);
-      ctx.lineTo(-this.radius, this.radius * 0.6);
+      ctx.moveTo(this.radius * 2.2, 0);
+      ctx.lineTo(-this.radius, -this.radius * 0.55);
+      ctx.lineTo(-this.radius * 0.4, 0);
+      ctx.lineTo(-this.radius, this.radius * 0.55);
       ctx.closePath();
       ctx.fill();
     }

@@ -34,6 +34,28 @@ export const SKILL_ICONS = {
   chainLightning: '雷',
   frostRing: '冰',
   poisonCloud: '毒',
+  // 德鲁伊
+  wolfSummon: '狼',
+  bearSummon: '熊',
+  vineBind: '藤',
+  poisonVines: '蔓',
+  thornsArmor: '荆',
+  natureStorm: '风',
+  ancientNature: '树',
+  // 猎人
+  pierceArrow: '箭',
+  multiShot: '散',
+  explodeArrow: '爆',
+  frostArrow: '冻',
+  homingArrow: '追',
+  chainArrow: '链',
+  arrowStorm: '雨',
+  // 法师
+  mageFireball: '火',
+  arcaneMissile: '奥',
+  meteor: '陨',
+  blackHole: '洞',
+  apocalypse: '启',
 };
 
 export default { formatTime, roundRect, pointInRect, SKILL_ICONS };
