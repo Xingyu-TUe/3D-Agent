@@ -1,0 +1,62 @@
+{
+  "project": "Hell Rift / 地狱裂隙",
+  "repo": "https://github.com/Xingyu-TUe/3D-Agent",
+  "branch": "cursor/hell-rift-wechat-game-b0ee",
+  "note": "克隆后把 root 改成你本机仓库绝对路径即可。所有相对路径均相对于仓库根目录。",
+  "root": ".",
+  "paths": {
+    "源码入口": "src/",
+    "H5入口": "index.html",
+    "游戏主逻辑": "src/Game.js",
+    "启动(H5/共享)": "src/main.js",
+    "微信打包入口": "src/wechat-entry.js",
+    "职业配置": "src/Config/Character.json",
+    "职业配置(运行时)": "src/Config/characterRaw.js",
+    "技能数据": "src/Data/skills.js",
+    "怪物数据": "src/Data/enemies.js",
+    "素材源目录": "src/Assets/",
+    "角色8向动画": "src/Assets/characters/{druid|hunter|mage}/",
+    "素材清单": "src/Assets/manifestData.js",
+    "角色包清单": "src/Assets/characters/packData.js",
+    "微信运行时素材副本": "Assets/",
+    "微信打包产物目录": "dist/wechat/",
+    "微信导入包": "dist/HellRift.zip",
+    "微信单文件入口": "game.js",
+    "微信配置": "game.json",
+    "开发者工具工程配置": "project.config.json",
+    "脚本": "scripts/",
+    "本地静态服务": "scripts/dev-server.js",
+    "微信打包脚本": "scripts/build-wechat.js",
+    "通用素材生成": "scripts/generate-assets.js",
+    "角色精灵生成": "scripts/generate-character-sprites.js",
+    "无头自测": "scripts/headless-sim.js",
+    "微信辅助bat": "scripts/wechat-update/"
+  },
+  "commands": {
+    "安装依赖": "npm install",
+    "本地H5调试": "npm run dev",
+    "H5地址": "http://localhost:8080",
+    "语法检查": "npm run check",
+    "无头模拟": "npm run test:sim",
+    "生成通用素材": "npm run generate:assets",
+    "生成角色8向动画": "npm run generate:characters",
+    "生成全部素材": "npm run generate:all",
+    "打包微信": "npm run build:wechat"
+  },
+  "wechat": {
+    "推荐导入目录": "dist/wechat/",
+    "导入后应看到": ["game.js", "game.json", "project.config.json", "Assets/"],
+    "不要直接打开": ["整个源码仓库根目录（若缺 Assets/ 会预加载失败）"],
+    "改代码后流程": [
+      "在本机改 src/",
+      "npm run build:wechat",
+      "用微信开发者工具打开/刷新 dist/wechat/ 或重新解压 dist/HellRift.zip"
+    ]
+  },
+  "localSetup": {
+    "clone": "git clone -b cursor/hell-rift-wechat-game-b0ee https://github.com/Xingyu-TUe/3D-Agent.git",
+    "enter": "cd 3D-Agent",
+    "install": "npm install",
+    "dev": "npm run dev"
+  }
+}
