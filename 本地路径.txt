@@ -1,0 +1,48 @@
+# 地狱裂隙 · 当前本地路径（自动定位）
+
+## 结论
+
+游戏代码**已经在本地**，无需重新下载。
+
+| 项 | 值 |
+|----|----|
+| **仓库根目录（绝对路径）** | `/workspace` |
+| GitHub | https://github.com/Xingyu-TUe/3D-Agent |
+| 分支 | `cursor/hell-rift-wechat-game-b0ee` |
+| 路径表 | `/workspace/local-paths.json` |
+| 开发说明 | `/workspace/本地开发.md` |
+
+## 关键子路径
+
+```text
+/workspace/src/                  ← 源码
+/workspace/src/Game.js           ← 主逻辑
+/workspace/src/Assets/           ← 素材源
+/workspace/src/Assets/characters/ ← 角色 8 向动画
+/workspace/index.html            ← H5 入口
+/workspace/dist/wechat/          ← 微信导入目录（需先 build）
+/workspace/game.js               ← 微信单文件入口
+```
+
+## 启动本地开发
+
+```bash
+cd /workspace
+npm install
+npm run dev
+# 浏览器打开 http://localhost:8080
+```
+
+## 若在你自己的电脑上没有这份代码
+
+```bash
+git clone -b cursor/hell-rift-wechat-game-b0ee https://github.com/Xingyu-TUe/3D-Agent.git
+cd 3D-Agent
+npm install
+npm run dev
+```
+
+然后把 `local-paths.json` 里的 `"root"` / `"absoluteRoot"` 改成你本机路径，例如：
+
+- Windows: `D:/Games/3D-Agent`
+- macOS: `/Users/你的用户名/3D-Agent`

@@ -2,8 +2,10 @@
   "project": "Hell Rift / 地狱裂隙",
   "repo": "https://github.com/Xingyu-TUe/3D-Agent",
   "branch": "cursor/hell-rift-wechat-game-b0ee",
-  "note": "克隆后把 root 改成你本机仓库绝对路径即可。所有相对路径均相对于仓库根目录。",
-  "root": ".",
+  "note": "当前云端/工作区已检出该仓库。本机另开目录开发时，把 root 改成你电脑上的绝对路径；相对 paths 拼在 root 后即为完整路径。",
+  "root": "/workspace",
+  "absoluteRoot": "/workspace",
+  "repoUrl": "https://github.com/Xingyu-TUe/3D-Agent",
   "paths": {
     "源码入口": "src/",
     "H5入口": "index.html",
