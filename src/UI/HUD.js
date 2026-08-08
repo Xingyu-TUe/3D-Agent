@@ -1,8 +1,8 @@
 /**
  * HUD.js
- * 游戏内顶部信息栏 + 暂停按钮 + 技能栏。
+ * 游戏内顶部信息栏 + 暂停/设置按钮 + 技能栏。
  *   顶部：生命条、经验条、等级、时间、击杀数
- *   右上：暂停按钮
+ *   右上：暂停 + 设置
  *   底部中：已获得技能图标
  */
 
@@ -16,6 +16,7 @@ export class HUD {
     this.h = 0;
     this.safeTop = 0;
     this.pauseBtn = { x: 0, y: 0, r: 26 };
+    this.settingsBtn = { x: 0, y: 0, r: 26 };
     this.showFps = false;
   }
 
@@ -25,12 +26,23 @@ export class HUD {
     this.safeTop = safeTop || 0;
     this.pauseBtn.x = w - 42;
     this.pauseBtn.y = this.safeTop + 40;
+    // 设置按钮在暂停下方，始终可见
+    this.settingsBtn.x = w - 42;
+    this.settingsBtn.y = this.pauseBtn.y + 58;
   }
 
   hitPause(x, y) {
-    const dx = x - this.pauseBtn.x;
-    const dy = y - this.pauseBtn.y;
-    return dx * dx + dy * dy <= (this.pauseBtn.r + 8) * (this.pauseBtn.r + 8);
+    return this._hitCircle(x, y, this.pauseBtn);
+  }
+
+  hitSettings(x, y) {
+    return this._hitCircle(x, y, this.settingsBtn);
+  }
+
+  _hitCircle(x, y, b) {
+    const dx = x - b.x;
+    const dy = y - b.y;
+    return dx * dx + dy * dy <= (b.r + 10) * (b.r + 10);
   }
 
   render(ctx, state) {
@@ -61,11 +73,11 @@ export class HUD {
     if (expIcon) drawIcon(ctx, expIcon, pad + 10, expY + 6, 20);
     this._bar(ctx, expPad, expY, expWidth, 12, expPct, '#0d2038', '#2b7fff', '#7cc4ff');
 
-    // 等级徽章
+    // 等级徽章（略左移，避开右侧按钮）
     ctx.fillStyle = '#1a1d26';
     ctx.strokeStyle = '#b3121f';
     ctx.lineWidth = 2;
-    const lvX = this.w - pad - 40;
+    const lvX = this.w - pad - 100;
     ctx.beginPath();
     ctx.arc(lvX + 20, expY + 4, 22, 0, Math.PI * 2);
     ctx.fill();
@@ -87,7 +99,7 @@ export class HUD {
     ctx.textAlign = 'left';
     ctx.fillText(`击杀 ${player.kills}`, pad, expY + 40);
     ctx.textAlign = 'right';
-    ctx.fillText(`怪物 ${enemyCount}`, this.w - pad, expY + 40);
+    ctx.fillText(`怪物 ${enemyCount}`, this.w - pad - 56, expY + 40);
 
     if (this.showFps && fps != null) {
       ctx.fillStyle = fps >= 50 ? '#7affb0' : (fps >= 30 ? '#ffd24a' : '#ff6b6b');
@@ -96,30 +108,36 @@ export class HUD {
       ctx.fillText(`FPS ${fps}`, pad, expY + 58);
     }
 
-    // 暂停按钮
-    this._pauseButton(ctx);
+    this._circleButton(ctx, this.pauseBtn, 'pause', '||');
+    this._circleButton(ctx, this.settingsBtn, 'settings', '设');
 
-    // 技能栏
     this._skillBar(ctx, state.skills);
   }
 
-  _pauseButton(ctx) {
-    const b = this.pauseBtn;
-    const pauseImg = Assets.ui('pause');
-    if (pauseImg) {
-      drawIcon(ctx, pauseImg, b.x, b.y, b.r * 2);
+  _circleButton(ctx, b, uiId, fallback) {
+    const img = Assets.ui(uiId);
+    if (img) {
+      drawIcon(ctx, img, b.x, b.y, b.r * 2);
       return;
     }
-    ctx.fillStyle = 'rgba(20,22,30,0.7)';
+    ctx.fillStyle = 'rgba(20,22,30,0.75)';
     ctx.beginPath();
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = 'rgba(179,18,31,0.8)';
+    ctx.strokeStyle = 'rgba(179,18,31,0.85)';
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.fillStyle = '#e6edf3';
-    ctx.fillRect(b.x - 8, b.y - 9, 5, 18);
-    ctx.fillRect(b.x + 3, b.y - 9, 5, 18);
+    if (fallback === '||') {
+      ctx.fillStyle = '#e6edf3';
+      ctx.fillRect(b.x - 8, b.y - 9, 5, 18);
+      ctx.fillRect(b.x + 3, b.y - 9, 5, 18);
+    } else {
+      ctx.fillStyle = '#e6edf3';
+      ctx.font = 'bold 14px "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(fallback, b.x, b.y);
+    }
   }
 
   _skillBar(ctx, skills) {

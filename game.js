@@ -6111,6 +6111,7 @@
       this.h = 0;
       this.safeTop = 0;
       this.pauseBtn = { x: 0, y: 0, r: 26 };
+      this.settingsBtn = { x: 0, y: 0, r: 26 };
       this.showFps = false;
     }
     resize(w, h, safeTop) {
@@ -6119,11 +6120,19 @@
       this.safeTop = safeTop || 0;
       this.pauseBtn.x = w - 42;
       this.pauseBtn.y = this.safeTop + 40;
+      this.settingsBtn.x = w - 42;
+      this.settingsBtn.y = this.pauseBtn.y + 58;
     }
     hitPause(x, y) {
-      const dx = x - this.pauseBtn.x;
-      const dy = y - this.pauseBtn.y;
-      return dx * dx + dy * dy <= (this.pauseBtn.r + 8) * (this.pauseBtn.r + 8);
+      return this._hitCircle(x, y, this.pauseBtn);
+    }
+    hitSettings(x, y) {
+      return this._hitCircle(x, y, this.settingsBtn);
+    }
+    _hitCircle(x, y, b) {
+      const dx = x - b.x;
+      const dy = y - b.y;
+      return dx * dx + dy * dy <= (b.r + 10) * (b.r + 10);
     }
     render(ctx, state) {
       const { player, timeLeft, enemyCount, fps } = state;
@@ -6151,7 +6160,7 @@
       ctx.fillStyle = "#1a1d26";
       ctx.strokeStyle = "#b3121f";
       ctx.lineWidth = 2;
-      const lvX = this.w - pad - 40;
+      const lvX = this.w - pad - 100;
       ctx.beginPath();
       ctx.arc(lvX + 20, expY + 4, 22, 0, Math.PI * 2);
       ctx.fill();
@@ -6171,33 +6180,41 @@
       ctx.textAlign = "left";
       ctx.fillText(`\u51FB\u6740 ${player.kills}`, pad, expY + 40);
       ctx.textAlign = "right";
-      ctx.fillText(`\u602A\u7269 ${enemyCount}`, this.w - pad, expY + 40);
+      ctx.fillText(`\u602A\u7269 ${enemyCount}`, this.w - pad - 56, expY + 40);
       if (this.showFps && fps != null) {
         ctx.fillStyle = fps >= 50 ? "#7affb0" : fps >= 30 ? "#ffd24a" : "#ff6b6b";
         ctx.font = "11px monospace";
         ctx.textAlign = "left";
         ctx.fillText(`FPS ${fps}`, pad, expY + 58);
       }
-      this._pauseButton(ctx);
+      this._circleButton(ctx, this.pauseBtn, "pause", "||");
+      this._circleButton(ctx, this.settingsBtn, "settings", "\u8BBE");
       this._skillBar(ctx, state.skills);
     }
-    _pauseButton(ctx) {
-      const b = this.pauseBtn;
-      const pauseImg = AssetLoader_default.ui("pause");
-      if (pauseImg) {
-        drawIcon(ctx, pauseImg, b.x, b.y, b.r * 2);
+    _circleButton(ctx, b, uiId, fallback) {
+      const img = AssetLoader_default.ui(uiId);
+      if (img) {
+        drawIcon(ctx, img, b.x, b.y, b.r * 2);
         return;
       }
-      ctx.fillStyle = "rgba(20,22,30,0.7)";
+      ctx.fillStyle = "rgba(20,22,30,0.75)";
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = "rgba(179,18,31,0.8)";
+      ctx.strokeStyle = "rgba(179,18,31,0.85)";
       ctx.lineWidth = 2;
       ctx.stroke();
-      ctx.fillStyle = "#e6edf3";
-      ctx.fillRect(b.x - 8, b.y - 9, 5, 18);
-      ctx.fillRect(b.x + 3, b.y - 9, 5, 18);
+      if (fallback === "||") {
+        ctx.fillStyle = "#e6edf3";
+        ctx.fillRect(b.x - 8, b.y - 9, 5, 18);
+        ctx.fillRect(b.x + 3, b.y - 9, 5, 18);
+      } else {
+        ctx.fillStyle = "#e6edf3";
+        ctx.font = 'bold 14px "Microsoft YaHei", sans-serif';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(fallback, b.x, b.y);
+      }
     }
     _skillBar(ctx, skills) {
       if (!skills || skills.length === 0) return;
@@ -6467,6 +6484,104 @@
   };
   var BossBar_default = BossBar;
 
+  // src/UI/SettingsPanel.js
+  var SettingsPanel = class {
+    constructor() {
+      this.w = 0;
+      this.h = 0;
+      this.toggleBtn = { x: 0, y: 0, w: 0, h: 0 };
+      this.closeBtn = { x: 0, y: 0, w: 0, h: 0 };
+    }
+    resize(w, h) {
+      this.w = w;
+      this.h = h;
+      this._layout();
+    }
+    _layout() {
+      const panelW = Math.min(340, this.w * 0.86);
+      const panelH = 220;
+      const px = (this.w - panelW) / 2;
+      const py = (this.h - panelH) / 2;
+      this.panel = { x: px, y: py, w: panelW, h: panelH };
+      const btnW = panelW - 40;
+      const btnH = 48;
+      this.toggleBtn = {
+        x: px + 20,
+        y: py + 88,
+        w: btnW,
+        h: btnH
+      };
+      this.closeBtn = {
+        x: px + 20,
+        y: py + 88 + btnH + 16,
+        w: btnW,
+        h: btnH
+      };
+    }
+    /** @returns {'toggle'|'close'|null} */
+    handleTap(x, y) {
+      this._layout();
+      if (pointInRect(x, y, this.toggleBtn.x, this.toggleBtn.y, this.toggleBtn.w, this.toggleBtn.h)) {
+        toggleCombatNumbers();
+        return "toggle";
+      }
+      if (pointInRect(x, y, this.closeBtn.x, this.closeBtn.y, this.closeBtn.w, this.closeBtn.h)) {
+        return "close";
+      }
+      const p = this.panel;
+      if (!pointInRect(x, y, p.x, p.y, p.w, p.h)) return "close";
+      return null;
+    }
+    render(ctx) {
+      this._layout();
+      const w = this.w;
+      const h = this.h;
+      const p = this.panel;
+      ctx.fillStyle = "rgba(5,6,10,0.72)";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "rgba(18,16,24,0.96)";
+      roundRect(ctx, p.x, p.y, p.w, p.h, 16);
+      ctx.fill();
+      ctx.strokeStyle = "#b3121f";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ffd24a";
+      ctx.font = 'bold 24px "Microsoft YaHei", sans-serif';
+      ctx.fillText("\u8BBE\u7F6E", w / 2, p.y + 36);
+      ctx.fillStyle = "#8b9cb3";
+      ctx.font = "13px sans-serif";
+      ctx.fillText("\u6218\u6597\u98D8\u5B57\u663E\u793A", w / 2, p.y + 64);
+      const on = getShowCombatNumbers();
+      const t = this.toggleBtn;
+      ctx.fillStyle = on ? "rgba(40,90,60,0.95)" : "rgba(55,28,32,0.95)";
+      roundRect(ctx, t.x, t.y, t.w, t.h, 12);
+      ctx.fill();
+      ctx.strokeStyle = on ? "#6dbf4a" : "#b3121f";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = 'bold 17px "Microsoft YaHei", sans-serif';
+      ctx.fillText(
+        on ? "\u4F24\u5BB3 / \u7ECF\u9A8C\u6570\u5B57\uFF1A\u5F00" : "\u4F24\u5BB3 / \u7ECF\u9A8C\u6570\u5B57\uFF1A\u5173",
+        w / 2,
+        t.y + t.h / 2
+      );
+      const c = this.closeBtn;
+      ctx.fillStyle = "rgba(30,40,70,0.95)";
+      roundRect(ctx, c.x, c.y, c.w, c.h, 12);
+      ctx.fill();
+      ctx.strokeStyle = "#5cb8ff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#e6edf3";
+      ctx.font = 'bold 17px "Microsoft YaHei", sans-serif';
+      ctx.fillText("\u5173\u95ED", w / 2, c.y + c.h / 2);
+    }
+  };
+  var SettingsPanel_default = SettingsPanel;
+
   // src/Data/equipment.js
   var EQUIP_SLOTS = ["weapon", "helmet", "armor", "boots", "ring", "amulet"];
   var SLOT_NAMES = {
@@ -6557,8 +6672,6 @@
       this.player = new Player_default();
       this.effects = new EffectSystem_default();
       this.expSystem = new ExpSystem_default(this.player, this.events, this.effects);
-      this._pauseToggleRect = { x: 0, y: 0, w: 0, h: 0 };
-      this._pauseResumeRect = { x: 0, y: 0, w: 0, h: 0 };
       this.enemySystem = new EnemySystem_default(this.player, this.events, this.effects);
       this.bulletSystem = new BulletSystem_default(this.player, this.enemySystem, this.collision, this.effects, this.events);
       this.summonSystem = new SummonSystem_default(this.player, this.enemySystem, this.collision, this.effects);
@@ -6577,6 +6690,7 @@
       this.hud.showFps = GameConfig_default.debug.showFps;
       this.levelUpUI = new LevelUpUI_default();
       this.bossBar = new BossBar_default();
+      this.settingsPanel = new SettingsPanel_default();
       this.time = 0;
       this.pendingLevelUps = 0;
       this.gameTime = 0;
@@ -6654,6 +6768,7 @@
       this.hud.resize(w, h, safeTop);
       this.levelUpUI.resize(w, h);
       this.bossBar.resize(w, h);
+      this.settingsPanel.resize(w, h);
     }
     _openLevelUp() {
       this.state = "levelup";
@@ -6665,7 +6780,7 @@
         this.levelUpUI.update(dt);
         return;
       }
-      if (this.state === "paused") {
+      if (this.state === "paused" || this.state === "settings") {
         return;
       }
       if (this.finished) {
@@ -6741,6 +6856,8 @@
         this.levelUpUI.render(ctx);
       } else if (this.state === "paused") {
         this._renderPauseOverlay(ctx);
+      } else if (this.state === "settings") {
+        this.settingsPanel.render(ctx);
       }
     }
     _hudState() {
@@ -6761,63 +6878,19 @@
         skills
       };
     }
-    _layoutPauseButtons() {
-      const w = this.game.width;
-      const h = this.game.height;
-      const tw = Math.min(320, w * 0.78);
-      const th = 52;
-      this._pauseToggleRect = {
-        x: (w - tw) / 2,
-        y: h * 0.48,
-        w: tw,
-        h: th
-      };
-      this._pauseResumeRect = {
-        x: (w - tw) / 2,
-        y: h * 0.48 + th + 18,
-        w: tw,
-        h: th
-      };
-    }
     _renderPauseOverlay(ctx) {
       const w = this.game.width;
       const h = this.game.height;
-      this._layoutPauseButtons();
-      ctx.fillStyle = "rgba(5,6,10,0.78)";
+      ctx.fillStyle = "rgba(5,6,10,0.75)";
       ctx.fillRect(0, 0, w, h);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#e6edf3";
       ctx.font = 'bold 36px "Microsoft YaHei", sans-serif';
-      ctx.fillText("\u5DF2\u6682\u505C", w / 2, h * 0.34);
+      ctx.fillText("\u5DF2\u6682\u505C", w / 2, h * 0.42);
       ctx.fillStyle = "#8b9cb3";
-      ctx.font = "14px sans-serif";
-      ctx.fillText("\u53EF\u5F00\u5173\u6218\u6597\u98D8\u5B57\uFF0C\u6216\u7EE7\u7EED\u6E38\u620F", w / 2, h * 0.34 + 36);
-      const on = getShowCombatNumbers();
-      const t = this._pauseToggleRect;
-      ctx.fillStyle = on ? "rgba(40,90,60,0.9)" : "rgba(40,30,36,0.9)";
-      roundRect(ctx, t.x, t.y, t.w, t.h, 12);
-      ctx.fill();
-      ctx.strokeStyle = on ? "#6dbf4a" : "#b3121f";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = "#e6edf3";
-      ctx.font = 'bold 16px "Microsoft YaHei", sans-serif';
-      ctx.fillText(
-        on ? "\u4F24\u5BB3 / \u7ECF\u9A8C\u6570\u5B57\uFF1A\u5F00" : "\u4F24\u5BB3 / \u7ECF\u9A8C\u6570\u5B57\uFF1A\u5173",
-        w / 2,
-        t.y + t.h / 2
-      );
-      const r = this._pauseResumeRect;
-      ctx.fillStyle = "rgba(30,40,70,0.95)";
-      roundRect(ctx, r.x, r.y, r.w, r.h, 12);
-      ctx.fill();
-      ctx.strokeStyle = "#5cb8ff";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.fillStyle = "#e6edf3";
-      ctx.font = 'bold 18px "Microsoft YaHei", sans-serif';
-      ctx.fillText("\u7EE7\u7EED\u6E38\u620F", w / 2, r.y + r.h / 2);
+      ctx.font = "16px sans-serif";
+      ctx.fillText("\u70B9\u51FB\u4EFB\u610F\u5904\u7EE7\u7EED", w / 2, h * 0.42 + 40);
     }
     // ---------------- 输入 ----------------
     onTouchStart(id, x, y) {
@@ -6834,21 +6907,22 @@
         }
         return;
       }
+      if (this.state === "settings") {
+        const action = this.settingsPanel.handleTap(x, y);
+        if (action === "close") this.state = "playing";
+        return;
+      }
       if (this.state === "paused") {
-        this._layoutPauseButtons();
-        const t = this._pauseToggleRect;
-        const r = this._pauseResumeRect;
-        if (pointInRect(x, y, t.x, t.y, t.w, t.h)) {
-          toggleCombatNumbers();
-          return;
-        }
-        if (pointInRect(x, y, r.x, r.y, r.w, r.h)) {
-          this.state = "playing";
-        }
+        this.state = "playing";
         return;
       }
       if (this.hud.hitPause(x, y)) {
         this.state = "paused";
+        this.joystick.reset();
+        return;
+      }
+      if (this.hud.hitSettings(x, y)) {
+        this.state = "settings";
         this.joystick.reset();
         return;
       }
