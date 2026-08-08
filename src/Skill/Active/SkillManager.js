@@ -7,28 +7,20 @@
  *   - 维护冷却与持续状态
  *   - 提供 tryCast(slot) 供 UI 按钮调用
  *   - update(dt) 驱动所有主动技
- *
- * 具体技能效果由 BaseSkill 子类实现（后续模块注册到 REGISTRY）。
  */
 
 import skillConfig from '../../Data/skillConfigRaw.js';
 import BaseSkill from './BaseSkill.js';
+import { getActiveSkillClass } from './registry.js';
+import { registerAllActiveSkills } from './registerSkills.js';
 
-/** @type {Record<string, typeof BaseSkill>} */
-const REGISTRY = Object.create(null);
+registerAllActiveSkills();
 
-/**
- * 注册技能实现类（第三步起由各职业技能文件调用）
- * @param {string} id
- * @param {typeof BaseSkill} SkillClass
- */
-export function registerActiveSkill(id, SkillClass) {
-  REGISTRY[id] = SkillClass;
-}
+export { registerActiveSkill } from './registry.js';
 
 export class SkillManager {
   /**
-   * @param {object} ctx { player, enemySystem, bulletSystem, collision, effects, events, camera }
+   * @param {object} ctx { player, enemySystem, bulletSystem, skillSystem, collision, effects, events, camera }
    */
   constructor(ctx) {
     this.ctx = ctx;
@@ -58,7 +50,7 @@ export class SkillManager {
       console.warn('[SkillManager] 缺少技能定义:', skillId);
       return null;
     }
-    const Cls = REGISTRY[skillId] || BaseSkill;
+    const Cls = getActiveSkillClass(skillId) || BaseSkill;
     return new Cls(def, this.ctx);
   }
 

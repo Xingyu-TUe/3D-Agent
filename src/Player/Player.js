@@ -45,6 +45,10 @@ export class Player {
     this.hitTimer = 0;
     this._atkToggle = false;
     this.lockAnim = false;
+
+    /** 主动技能变身等临时状态 */
+    this.rangeMul = 1;
+    this.transformId = null;
   }
 
   get maxHp() {
@@ -333,6 +337,8 @@ export class Player {
     this.attackTimer = 0;
     this.hitTimer = 0;
     this.lockAnim = false;
+    this.rangeMul = 1;
+    this.transformId = null;
   }
 }
 

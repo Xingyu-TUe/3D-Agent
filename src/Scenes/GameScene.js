@@ -56,11 +56,12 @@ export class GameScene {
     );
     this.upgradeManager = new UpgradeManager(this.skillSystem, this.player);
 
-    // 主动技能（配置驱动；具体技能实现后续模块注册）
+    // 主动技能（配置驱动；三职业实现已注册）
     this.activeSkills = new SkillManager({
       player: this.player,
       enemySystem: this.enemySystem,
       bulletSystem: this.bulletSystem,
+      skillSystem: this.skillSystem,
       collision: this.collision,
       effects: this.effects,
       events: this.events,

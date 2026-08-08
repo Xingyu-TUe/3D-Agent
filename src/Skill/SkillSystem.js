@@ -30,6 +30,8 @@ export class SkillSystem {
     this._queryBuf = [];
     this._pendingMeteors = [];
     this._barrages = [];
+    /** 为 false 时暂停自动技能施放（主动变身等替换普攻） */
+    this.autoEnabled = true;
   }
 
   hasSkill(id) { return this.skills.has(id); }
@@ -79,17 +81,19 @@ export class SkillSystem {
   }
 
   update(dt, camera) {
-    const atkSpeed = this.player.stats.final.atkSpeedMul;
-    for (const skill of this.skills.values()) {
-      skill.cooldownTimer -= dt;
-      if (skill.cooldownTimer <= 0) {
-        const fired = this._execute(skill);
-        if (fired) {
-          skill.cooldownTimer = skill.effectiveCooldown(atkSpeed);
-          // 光环持续 tick 不刷攻击动画，离散施法触发贴图 Attack 行
-          if (skill.type !== 'aura_ring') this.player.triggerAttack();
-        } else {
-          skill.cooldownTimer = 0.1;
+    if (this.autoEnabled) {
+      const atkSpeed = this.player.stats.final.atkSpeedMul;
+      for (const skill of this.skills.values()) {
+        skill.cooldownTimer -= dt;
+        if (skill.cooldownTimer <= 0) {
+          const fired = this._execute(skill);
+          if (fired) {
+            skill.cooldownTimer = skill.effectiveCooldown(atkSpeed);
+            // 光环持续 tick 不刷攻击动画，离散施法触发贴图 Attack 行
+            if (skill.type !== 'aura_ring') this.player.triggerAttack();
+          } else {
+            skill.cooldownTimer = 0.1;
+          }
         }
       }
     }
@@ -471,6 +475,7 @@ export class SkillSystem {
     this.activeSynergies.length = 0;
     this._pendingMeteors.length = 0;
     this._barrages.length = 0;
+    this.autoEnabled = true;
   }
 }
 
