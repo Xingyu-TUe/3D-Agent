@@ -56,6 +56,13 @@ export const SKILL_ICONS = {
   meteor: '陨',
   blackHole: '洞',
   apocalypse: '启',
+  // 主动技能 id 回退
+  thorn_field: '荆',
+  ancient_bear: '熊',
+  shadow_dash: '影',
+  death_rain: '雨',
+  frost_nova: '霜',
+  meteor_apocalypse: '陨',
 };
 
 export default { formatTime, roundRect, pointInRect, SKILL_ICONS };

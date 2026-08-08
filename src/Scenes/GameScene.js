@@ -28,6 +28,7 @@ import EffectSystem from '../FX/EffectSystem.js';
 
 import Joystick from '../UI/Joystick.js';
 import HUD from '../UI/HUD.js';
+import SkillButtons from '../UI/SkillButtons.js';
 import LevelUpUI from '../UI/LevelUpUI.js';
 import BossBar from '../UI/BossBar.js';
 import SettingsPanel from '../UI/SettingsPanel.js';
@@ -72,6 +73,7 @@ export class GameScene {
     this.joystick = new Joystick();
     this.hud = new HUD();
     this.hud.showFps = GameConfig.debug.showFps;
+    this.skillButtons = new SkillButtons();
     this.levelUpUI = new LevelUpUI();
     this.bossBar = new BossBar();
     this.settingsPanel = new SettingsPanel();
@@ -176,7 +178,9 @@ export class GameScene {
     this.camera.resize(w, h);
     this.joystick.resize(w, h);
     const safeTop = this.game.safeArea ? this.game.safeArea.top : 0;
+    const safeBottom = this.game.safeArea ? (this.game.safeArea.bottom || 0) : 0;
     this.hud.resize(w, h, safeTop);
+    this.skillButtons.resize(w, h, safeBottom);
     this.levelUpUI.resize(w, h);
     this.bossBar.resize(w, h);
     this.settingsPanel.resize(w, h);
@@ -251,6 +255,7 @@ export class GameScene {
 
     // Boss 血条横幅
     this.bossBar.update(dt);
+    this.skillButtons.update(dt);
   }
 
   _goResult() {
@@ -303,6 +308,9 @@ export class GameScene {
 
     // HUD
     this.hud.render(ctx, this._hudState());
+
+    // 右下角主动技能按钮
+    this.skillButtons.render(ctx, this.activeSkills.getUiState());
 
     // Boss 血条
     const safeTop = this.game.safeArea ? this.game.safeArea.top : 0;
@@ -391,6 +399,14 @@ export class GameScene {
     if (this.hud.hitSettings(x, y)) {
       this.state = 'settings';
       this.joystick.reset();
+      return;
+    }
+    // 主动技能按钮（优先于摇杆，避免右半屏误触）
+    const skillSlot = this.skillButtons.hitTest(x, y);
+    if (skillSlot) {
+      if (this.activeSkills.tryCast(skillSlot)) {
+        this.skillButtons.flash(skillSlot);
+      }
       return;
     }
     this.joystick.onTouchStart(id, x, y);

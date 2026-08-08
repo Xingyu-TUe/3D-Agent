@@ -142,11 +142,12 @@ export class HUD {
 
   _skillBar(ctx, skills) {
     if (!skills || skills.length === 0) return;
+    // 底部居中被动技能栏，略上移并偏左，避开右下角主动技能按钮
     const size = 34;
     const gap = 6;
     const totalW = skills.length * (size + gap) - gap;
-    let x = (this.w - totalW) / 2;
-    const y = this.h - size - 14;
+    let x = Math.max(12, (this.w - totalW) / 2 - 40);
+    const y = this.h - size - 96;
     for (let i = 0; i < skills.length; i++) {
       const s = skills[i];
       ctx.fillStyle = 'rgba(15,17,24,0.75)';
