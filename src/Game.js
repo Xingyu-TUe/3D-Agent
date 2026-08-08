@@ -13,6 +13,7 @@ import Platform from './Utils/Platform.js';
 import Renderer from './Utils/Renderer.js';
 import SceneManager from './SceneManager.js';
 import GameConfig from './Config/GameConfig.js';
+import { loadSettings } from './Config/Settings.js';
 
 import MenuScene from './Scenes/MenuScene.js';
 import CharacterSelectScene from './Scenes/CharacterSelectScene.js';
@@ -22,6 +23,7 @@ import { getDefaultCharacterId } from './Config/Character.js';
 
 export class Game {
   constructor(canvas) {
+    loadSettings();
     this.canvas = canvas;
     this.renderer = new Renderer(canvas);
     this.ctx = this.renderer.ctx;

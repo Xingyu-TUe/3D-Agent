@@ -85,8 +85,17 @@ export class EffectSystem {
   }
 
   damageText(x, y, value, crit) {
+    if (!GameConfig.display.showCombatNumbers) return;
     const t = this.textPool.acquire();
-    t.spawn(x, y, value, crit);
+    t.spawn(x, y, value, crit, 'damage');
+    this.texts.push(t);
+  }
+
+  /** 拾取经验飘字（受同一显示开关控制） */
+  expText(x, y, value) {
+    if (!GameConfig.display.showCombatNumbers) return;
+    const t = this.textPool.acquire();
+    t.spawn(x, y, value, false, 'exp');
     this.texts.push(t);
   }
 

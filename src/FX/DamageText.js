@@ -17,14 +17,26 @@ export class DamageText {
     this.color = '#ffffff';
   }
 
-  spawn(x, y, value, crit) {
+  /**
+   * @param {'damage'|'exp'} [kind]
+   */
+  spawn(x, y, value, crit, kind) {
     this.x = x + (Math.random() * 20 - 10);
     this.y = y;
-    this.text = value >= 1 ? String(Math.round(value)) : value.toFixed(1);
-    this.crit = crit;
-    this.life = this.maxLife = crit ? 0.9 : 0.7;
-    this.vy = crit ? -90 : -60;
-    this.color = crit ? '#ffd24a' : '#ffffff';
+    this.kind = kind || 'damage';
+    this.crit = !!crit && this.kind === 'damage';
+    if (this.kind === 'exp') {
+      const n = value >= 1 ? Math.round(value) : Math.max(1, Math.round(value * 10) / 10);
+      this.text = '+' + n;
+      this.life = this.maxLife = 0.75;
+      this.vy = -70;
+      this.color = '#7cc4ff';
+    } else {
+      this.text = value >= 1 ? String(Math.round(value)) : value.toFixed(1);
+      this.life = this.maxLife = this.crit ? 0.9 : 0.7;
+      this.vy = this.crit ? -90 : -60;
+      this.color = this.crit ? '#ffd24a' : '#ffffff';
+    }
     this.active = true;
     return this;
   }
@@ -47,7 +59,11 @@ export class DamageText {
     const t = this.life / this.maxLife;
     ctx.save();
     ctx.globalAlpha = Math.min(1, t * 1.6);
-    ctx.font = this.crit ? 'bold 26px sans-serif' : 'bold 18px sans-serif';
+    if (this.kind === 'exp') {
+      ctx.font = 'bold 16px sans-serif';
+    } else {
+      ctx.font = this.crit ? 'bold 26px sans-serif' : 'bold 18px sans-serif';
+    }
     ctx.textAlign = 'center';
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(0,0,0,0.7)';

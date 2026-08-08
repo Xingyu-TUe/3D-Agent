@@ -9,6 +9,7 @@
  */
 
 import GameConfig from '../Config/GameConfig.js';
+import { getShowCombatNumbers, toggleCombatNumbers } from '../Config/Settings.js';
 import { getDefaultCharacterId } from '../Config/Character.js';
 import EventBus from '../Utils/EventBus.js';
 import Camera from '../Utils/Camera.js';
@@ -29,7 +30,7 @@ import Joystick from '../UI/Joystick.js';
 import HUD from '../UI/HUD.js';
 import LevelUpUI from '../UI/LevelUpUI.js';
 import BossBar from '../UI/BossBar.js';
-import { SKILL_ICONS } from '../UI/UIHelpers.js';
+import { SKILL_ICONS, pointInRect, roundRect } from '../UI/UIHelpers.js';
 import { EquipmentFactory } from '../Player/Equipment.js';
 
 export class GameScene {
@@ -44,7 +45,9 @@ export class GameScene {
 
     this.player = new Player();
     this.effects = new EffectSystem();
-    this.expSystem = new ExpSystem(this.player, this.events);
+    this.expSystem = new ExpSystem(this.player, this.events, this.effects);
+    this._pauseToggleRect = { x: 0, y: 0, w: 0, h: 0 };
+    this._pauseResumeRect = { x: 0, y: 0, w: 0, h: 0 };
     this.enemySystem = new EnemySystem(this.player, this.events, this.effects);
     this.bulletSystem = new BulletSystem(this.player, this.enemySystem, this.collision, this.effects, this.events);
     this.summonSystem = new SummonSystem(this.player, this.enemySystem, this.collision, this.effects);
@@ -315,19 +318,66 @@ export class GameScene {
     };
   }
 
+  _layoutPauseButtons() {
+    const w = this.game.width;
+    const h = this.game.height;
+    const tw = Math.min(320, w * 0.78);
+    const th = 52;
+    this._pauseToggleRect = {
+      x: (w - tw) / 2,
+      y: h * 0.48,
+      w: tw,
+      h: th,
+    };
+    this._pauseResumeRect = {
+      x: (w - tw) / 2,
+      y: h * 0.48 + th + 18,
+      w: tw,
+      h: th,
+    };
+  }
+
   _renderPauseOverlay(ctx) {
     const w = this.game.width;
     const h = this.game.height;
-    ctx.fillStyle = 'rgba(5,6,10,0.75)';
+    this._layoutPauseButtons();
+    ctx.fillStyle = 'rgba(5,6,10,0.78)';
     ctx.fillRect(0, 0, w, h);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#e6edf3';
     ctx.font = 'bold 36px "Microsoft YaHei", sans-serif';
-    ctx.fillText('已暂停', w / 2, h * 0.42);
+    ctx.fillText('已暂停', w / 2, h * 0.34);
     ctx.fillStyle = '#8b9cb3';
-    ctx.font = '16px sans-serif';
-    ctx.fillText('点击任意处继续', w / 2, h * 0.42 + 40);
+    ctx.font = '14px sans-serif';
+    ctx.fillText('可开关战斗飘字，或继续游戏', w / 2, h * 0.34 + 36);
+
+    const on = getShowCombatNumbers();
+    const t = this._pauseToggleRect;
+    ctx.fillStyle = on ? 'rgba(40,90,60,0.9)' : 'rgba(40,30,36,0.9)';
+    roundRect(ctx, t.x, t.y, t.w, t.h, 12);
+    ctx.fill();
+    ctx.strokeStyle = on ? '#6dbf4a' : '#b3121f';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = 'bold 16px "Microsoft YaHei", sans-serif';
+    ctx.fillText(
+      on ? '伤害 / 经验数字：开' : '伤害 / 经验数字：关',
+      w / 2,
+      t.y + t.h / 2,
+    );
+
+    const r = this._pauseResumeRect;
+    ctx.fillStyle = 'rgba(30,40,70,0.95)';
+    roundRect(ctx, r.x, r.y, r.w, r.h, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#5cb8ff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = 'bold 18px "Microsoft YaHei", sans-serif';
+    ctx.fillText('继续游戏', w / 2, r.y + r.h / 2);
   }
 
   // ---------------- 输入 ----------------
@@ -347,7 +397,16 @@ export class GameScene {
     }
 
     if (this.state === 'paused') {
-      this.state = 'playing';
+      this._layoutPauseButtons();
+      const t = this._pauseToggleRect;
+      const r = this._pauseResumeRect;
+      if (pointInRect(x, y, t.x, t.y, t.w, t.h)) {
+        toggleCombatNumbers();
+        return;
+      }
+      if (pointInRect(x, y, r.x, r.y, r.w, r.h)) {
+        this.state = 'playing';
+      }
       return;
     }
 

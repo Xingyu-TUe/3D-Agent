@@ -2,7 +2,8 @@
  * ExpSystem.js
  * 经验系统：
  *   - 管理经验球对象池（掉落 / 更新 / 吸附 / 拾取）
- *   - 升级判定（指数增长曲线），升级时通过回调通知（触发三选一）
+ *   - 升级判定（线性增长曲线），升级时通过回调通知（触发三选一）
+ *   - 拾取时按 GameConfig.exp.gainMul 缩放实际获得量
  *
  * 性能：只对可视 + 拾取范围附近的球做吸附与拾取判定。
  */
@@ -13,17 +14,20 @@ import GameConfig from '../Config/GameConfig.js';
 import { dist2 } from '../Utils/MathUtils.js';
 
 export class ExpSystem {
-  constructor(player, events) {
+  constructor(player, events, effects) {
     this.player = player;
     this.events = events;
+    this.effects = effects || null;
     this.pool = new ObjectPool(() => new ExpOrb(), (o) => o.reset(), GameConfig.performance.poolOrb);
     this.orbs = [];
     this.player.expToNext = this.expNeeded(this.player.level);
   }
 
-  /** 升级所需经验：指数增长 */
+  /** 升级所需经验：线性 need = base + (level-1) * perLevel */
   expNeeded(level) {
-    return Math.floor(GameConfig.exp.base * Math.pow(GameConfig.exp.growth, level - 1));
+    const lv = Math.max(1, level | 0);
+    const { base, perLevel } = GameConfig.exp;
+    return Math.max(1, Math.floor(base + (lv - 1) * perLevel));
   }
 
   dropOrb(x, y, value) {
@@ -72,7 +76,12 @@ export class ExpSystem {
     }
 
     if (gained > 0) {
-      p.addExp(gained);
+      const mul = GameConfig.exp.gainMul != null ? GameConfig.exp.gainMul : 1;
+      const actual = Math.max(0.1, gained * mul);
+      p.addExp(actual);
+      if (this.effects && GameConfig.display.showCombatNumbers) {
+        this.effects.expText(p.x, p.y - (p.stats.final.radius || 20) - 8, actual);
+      }
       this._checkLevelUp();
     }
   }

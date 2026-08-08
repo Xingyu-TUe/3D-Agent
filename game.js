@@ -1180,11 +1180,18 @@
       // 若想更快看到 Boss（调试），可改此值
     },
     exp: {
-      // 升级经验指数曲线： need(level) = base * growth^(level-1)
-      base: 8,
-      growth: 1.18,
+      // 获取倍率（相对原始掉落值）；1/3 = 变慢三倍
+      gainMul: 1 / 3,
+      // 线性升级：need(level) = base + (level - 1) * perLevel
+      base: 20,
+      perLevel: 15,
       // 经验球吸附速度
       magnetSpeed: 640
+    },
+    /** 显示相关（可由暂停菜单开关，并持久化） */
+    display: {
+      // 是否显示伤害飘字与拾取经验数字
+      showCombatNumbers: true
     },
     performance: {
       // 对象池初始容量
@@ -1213,6 +1220,29 @@
     }
   };
   var GameConfig_default = GameConfig;
+
+  // src/Config/Settings.js
+  var STORAGE_KEY = "hellrift_settings_v1";
+  function loadSettings() {
+    const saved = Platform_default.getStorage(STORAGE_KEY, null);
+    if (!saved || typeof saved !== "object") return;
+    if (typeof saved.showCombatNumbers === "boolean") {
+      GameConfig_default.display.showCombatNumbers = saved.showCombatNumbers;
+    }
+  }
+  function saveSettings() {
+    Platform_default.setStorage(STORAGE_KEY, {
+      showCombatNumbers: !!GameConfig_default.display.showCombatNumbers
+    });
+  }
+  function toggleCombatNumbers() {
+    GameConfig_default.display.showCombatNumbers = !GameConfig_default.display.showCombatNumbers;
+    saveSettings();
+    return GameConfig_default.display.showCombatNumbers;
+  }
+  function getShowCombatNumbers() {
+    return !!GameConfig_default.display.showCombatNumbers;
+  }
 
   // src/UI/UIHelpers.js
   function formatTime(seconds) {
@@ -2536,7 +2566,7 @@
   var CharacterSelectUI_default = CharacterSelectUI;
 
   // src/Player/CharacterSave.js
-  var STORAGE_KEY = "hellrift_character_save_v1";
+  var STORAGE_KEY2 = "hellrift_character_save_v1";
   function emptyClassSave() {
     return {
       level: 1,
@@ -2565,7 +2595,7 @@
   }
   var CharacterSave = {
     load() {
-      const data = Platform_default.getStorage(STORAGE_KEY, null);
+      const data = Platform_default.getStorage(STORAGE_KEY2, null);
       if (!data || typeof data !== "object") return defaultSave();
       const base = defaultSave();
       for (const id in base.classes) {
@@ -2580,7 +2610,7 @@
       return data;
     },
     save(data) {
-      Platform_default.setStorage(STORAGE_KEY, data);
+      Platform_default.setStorage(STORAGE_KEY2, data);
     },
     getSelectedClassId() {
       return this.load().selectedClassId;
@@ -3610,16 +3640,19 @@
 
   // src/Player/ExpSystem.js
   var ExpSystem = class {
-    constructor(player, events) {
+    constructor(player, events, effects) {
       this.player = player;
       this.events = events;
+      this.effects = effects || null;
       this.pool = new ObjectPool_default(() => new ExpOrb_default(), (o) => o.reset(), GameConfig_default.performance.poolOrb);
       this.orbs = [];
       this.player.expToNext = this.expNeeded(this.player.level);
     }
-    /** 升级所需经验：指数增长 */
+    /** 升级所需经验：线性 need = base + (level-1) * perLevel */
     expNeeded(level) {
-      return Math.floor(GameConfig_default.exp.base * Math.pow(GameConfig_default.exp.growth, level - 1));
+      const lv = Math.max(1, level | 0);
+      const { base, perLevel } = GameConfig_default.exp;
+      return Math.max(1, Math.floor(base + (lv - 1) * perLevel));
     }
     dropOrb(x, y, value) {
       const orb = this.pool.acquire();
@@ -3658,7 +3691,12 @@
         }
       }
       if (gained > 0) {
-        p.addExp(gained);
+        const mul = GameConfig_default.exp.gainMul != null ? GameConfig_default.exp.gainMul : 1;
+        const actual = Math.max(0.1, gained * mul);
+        p.addExp(actual);
+        if (this.effects && GameConfig_default.display.showCombatNumbers) {
+          this.effects.expText(p.x, p.y - (p.stats.final.radius || 20) - 8, actual);
+        }
         this._checkLevelUp();
       }
     }
@@ -5673,14 +5711,26 @@
       this.vy = -60;
       this.color = "#ffffff";
     }
-    spawn(x, y, value, crit) {
+    /**
+     * @param {'damage'|'exp'} [kind]
+     */
+    spawn(x, y, value, crit, kind) {
       this.x = x + (Math.random() * 20 - 10);
       this.y = y;
-      this.text = value >= 1 ? String(Math.round(value)) : value.toFixed(1);
-      this.crit = crit;
-      this.life = this.maxLife = crit ? 0.9 : 0.7;
-      this.vy = crit ? -90 : -60;
-      this.color = crit ? "#ffd24a" : "#ffffff";
+      this.kind = kind || "damage";
+      this.crit = !!crit && this.kind === "damage";
+      if (this.kind === "exp") {
+        const n = value >= 1 ? Math.round(value) : Math.max(1, Math.round(value * 10) / 10);
+        this.text = "+" + n;
+        this.life = this.maxLife = 0.75;
+        this.vy = -70;
+        this.color = "#7cc4ff";
+      } else {
+        this.text = value >= 1 ? String(Math.round(value)) : value.toFixed(1);
+        this.life = this.maxLife = this.crit ? 0.9 : 0.7;
+        this.vy = this.crit ? -90 : -60;
+        this.color = this.crit ? "#ffd24a" : "#ffffff";
+      }
       this.active = true;
       return this;
     }
@@ -5700,7 +5750,11 @@
       const t = this.life / this.maxLife;
       ctx.save();
       ctx.globalAlpha = Math.min(1, t * 1.6);
-      ctx.font = this.crit ? "bold 26px sans-serif" : "bold 18px sans-serif";
+      if (this.kind === "exp") {
+        ctx.font = "bold 16px sans-serif";
+      } else {
+        ctx.font = this.crit ? "bold 26px sans-serif" : "bold 18px sans-serif";
+      }
       ctx.textAlign = "center";
       ctx.lineWidth = 3;
       ctx.strokeStyle = "rgba(0,0,0,0.7)";
@@ -5788,8 +5842,16 @@
       return this._spawn("telegraph", { x, y, radius, color: color || "#ff3b3b", life: life || 1 });
     }
     damageText(x, y, value, crit) {
+      if (!GameConfig_default.display.showCombatNumbers) return;
       const t = this.textPool.acquire();
-      t.spawn(x, y, value, crit);
+      t.spawn(x, y, value, crit, "damage");
+      this.texts.push(t);
+    }
+    /** 拾取经验飘字（受同一显示开关控制） */
+    expText(x, y, value) {
+      if (!GameConfig_default.display.showCombatNumbers) return;
+      const t = this.textPool.acquire();
+      t.spawn(x, y, value, false, "exp");
       this.texts.push(t);
     }
     update(dt) {
@@ -6494,7 +6556,9 @@
       this.collision = new CollisionSystem_default();
       this.player = new Player_default();
       this.effects = new EffectSystem_default();
-      this.expSystem = new ExpSystem_default(this.player, this.events);
+      this.expSystem = new ExpSystem_default(this.player, this.events, this.effects);
+      this._pauseToggleRect = { x: 0, y: 0, w: 0, h: 0 };
+      this._pauseResumeRect = { x: 0, y: 0, w: 0, h: 0 };
       this.enemySystem = new EnemySystem_default(this.player, this.events, this.effects);
       this.bulletSystem = new BulletSystem_default(this.player, this.enemySystem, this.collision, this.effects, this.events);
       this.summonSystem = new SummonSystem_default(this.player, this.enemySystem, this.collision, this.effects);
@@ -6697,19 +6761,63 @@
         skills
       };
     }
+    _layoutPauseButtons() {
+      const w = this.game.width;
+      const h = this.game.height;
+      const tw = Math.min(320, w * 0.78);
+      const th = 52;
+      this._pauseToggleRect = {
+        x: (w - tw) / 2,
+        y: h * 0.48,
+        w: tw,
+        h: th
+      };
+      this._pauseResumeRect = {
+        x: (w - tw) / 2,
+        y: h * 0.48 + th + 18,
+        w: tw,
+        h: th
+      };
+    }
     _renderPauseOverlay(ctx) {
       const w = this.game.width;
       const h = this.game.height;
-      ctx.fillStyle = "rgba(5,6,10,0.75)";
+      this._layoutPauseButtons();
+      ctx.fillStyle = "rgba(5,6,10,0.78)";
       ctx.fillRect(0, 0, w, h);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#e6edf3";
       ctx.font = 'bold 36px "Microsoft YaHei", sans-serif';
-      ctx.fillText("\u5DF2\u6682\u505C", w / 2, h * 0.42);
+      ctx.fillText("\u5DF2\u6682\u505C", w / 2, h * 0.34);
       ctx.fillStyle = "#8b9cb3";
-      ctx.font = "16px sans-serif";
-      ctx.fillText("\u70B9\u51FB\u4EFB\u610F\u5904\u7EE7\u7EED", w / 2, h * 0.42 + 40);
+      ctx.font = "14px sans-serif";
+      ctx.fillText("\u53EF\u5F00\u5173\u6218\u6597\u98D8\u5B57\uFF0C\u6216\u7EE7\u7EED\u6E38\u620F", w / 2, h * 0.34 + 36);
+      const on = getShowCombatNumbers();
+      const t = this._pauseToggleRect;
+      ctx.fillStyle = on ? "rgba(40,90,60,0.9)" : "rgba(40,30,36,0.9)";
+      roundRect(ctx, t.x, t.y, t.w, t.h, 12);
+      ctx.fill();
+      ctx.strokeStyle = on ? "#6dbf4a" : "#b3121f";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#e6edf3";
+      ctx.font = 'bold 16px "Microsoft YaHei", sans-serif';
+      ctx.fillText(
+        on ? "\u4F24\u5BB3 / \u7ECF\u9A8C\u6570\u5B57\uFF1A\u5F00" : "\u4F24\u5BB3 / \u7ECF\u9A8C\u6570\u5B57\uFF1A\u5173",
+        w / 2,
+        t.y + t.h / 2
+      );
+      const r = this._pauseResumeRect;
+      ctx.fillStyle = "rgba(30,40,70,0.95)";
+      roundRect(ctx, r.x, r.y, r.w, r.h, 12);
+      ctx.fill();
+      ctx.strokeStyle = "#5cb8ff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#e6edf3";
+      ctx.font = 'bold 18px "Microsoft YaHei", sans-serif';
+      ctx.fillText("\u7EE7\u7EED\u6E38\u620F", w / 2, r.y + r.h / 2);
     }
     // ---------------- 输入 ----------------
     onTouchStart(id, x, y) {
@@ -6727,7 +6835,16 @@
         return;
       }
       if (this.state === "paused") {
-        this.state = "playing";
+        this._layoutPauseButtons();
+        const t = this._pauseToggleRect;
+        const r = this._pauseResumeRect;
+        if (pointInRect(x, y, t.x, t.y, t.w, t.h)) {
+          toggleCombatNumbers();
+          return;
+        }
+        if (pointInRect(x, y, r.x, r.y, r.w, r.h)) {
+          this.state = "playing";
+        }
         return;
       }
       if (this.hud.hitPause(x, y)) {
@@ -6888,6 +7005,7 @@
   // src/Game.js
   var Game = class {
     constructor(canvas2) {
+      loadSettings();
       this.canvas = canvas2;
       this.renderer = new Renderer_default(canvas2);
       this.ctx = this.renderer.ctx;

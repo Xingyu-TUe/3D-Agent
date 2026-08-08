@@ -68,11 +68,19 @@ export const GameConfig = {
   },
 
   exp: {
-    // 升级经验指数曲线： need(level) = base * growth^(level-1)
-    base: 8,
-    growth: 1.18,
+    // 获取倍率（相对原始掉落值）；1/3 = 变慢三倍
+    gainMul: 1 / 3,
+    // 线性升级：need(level) = base + (level - 1) * perLevel
+    base: 20,
+    perLevel: 15,
     // 经验球吸附速度
     magnetSpeed: 640,
+  },
+
+  /** 显示相关（可由暂停菜单开关，并持久化） */
+  display: {
+    // 是否显示伤害飘字与拾取经验数字
+    showCombatNumbers: true,
   },
 
   performance: {
