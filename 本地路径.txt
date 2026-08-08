@@ -1,48 +1,38 @@
-# 地狱裂隙 · 当前本地路径（自动定位）
+# 地狱裂隙 · 本地路径
 
-## 结论
-
-游戏代码**已经在本地**，无需重新下载。
+## 本机固定目录（请用这个）
 
 | 项 | 值 |
 |----|----|
-| **仓库根目录（绝对路径）** | `/workspace` |
+| **本机仓库根** | `D:\3D-Agent` |
 | GitHub | https://github.com/Xingyu-TUe/3D-Agent |
 | 分支 | `cursor/hell-rift-wechat-game-b0ee` |
-| 路径表 | `/workspace/local-paths.json` |
-| 开发说明 | `/workspace/本地开发.md` |
+| 同步脚本 | `同步到本机.bat` |
+| 说明 | `同步到本机说明.md` |
+
+## 每次云端更新后
+
+在本机双击（或从仓库下载后）运行：
+
+```text
+同步到本机.bat
+```
+
+会自动 `git pull` 到 `D:\3D-Agent` 并打包微信目录。
 
 ## 关键子路径
 
 ```text
-/workspace/src/                  ← 源码
-/workspace/src/Game.js           ← 主逻辑
-/workspace/src/Assets/           ← 素材源
-/workspace/src/Assets/characters/ ← 角色 8 向动画
-/workspace/index.html            ← H5 入口
-/workspace/dist/wechat/          ← 微信导入目录（需先 build）
-/workspace/game.js               ← 微信单文件入口
+D:\3D-Agent\src\                  ← 源码
+D:\3D-Agent\src\Game.js           ← 主逻辑
+D:\3D-Agent\src\Assets\           ← 素材源
+D:\3D-Agent\dist\wechat\          ← 微信导入目录
+D:\3D-Agent\game.js               ← 微信单文件入口
 ```
 
-## 启动本地开发
+## 启动
 
-```bash
-cd /workspace
-npm install
-npm run dev
-# 浏览器打开 http://localhost:8080
-```
-
-## 若在你自己的电脑上没有这份代码
-
-```bash
-git clone -b cursor/hell-rift-wechat-game-b0ee https://github.com/Xingyu-TUe/3D-Agent.git
-cd 3D-Agent
-npm install
+```bat
+cd /d D:\3D-Agent
 npm run dev
 ```
-
-然后把 `local-paths.json` 里的 `"root"` / `"absoluteRoot"` 改成你本机路径，例如：
-
-- Windows: `D:/Games/3D-Agent`
-- macOS: `/Users/你的用户名/3D-Agent`
