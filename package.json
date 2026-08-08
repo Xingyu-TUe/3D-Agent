@@ -1,0 +1,29 @@
+{
+  "name": "hell-rift",
+  "version": "0.1.1",
+  "description": "《地狱裂隙 Hell Rift》暗黑哥特风格 RogueLite 幸存者类微信小游戏，原生 JavaScript + Canvas，模块化开发。",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.js",
+    "start": "node scripts/dev-server.js",
+    "check": "node scripts/check-syntax.js",
+    "build:wechat": "node scripts/build-wechat.js",
+    "generate:assets": "node scripts/generate-assets.js",
+    "generate:characters": "node scripts/generate-character-sprites.js",
+    "generate:all": "node scripts/generate-assets.js && node scripts/generate-character-sprites.js",
+    "test:sim": "node scripts/headless-sim.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "keywords": [
+    "wechat",
+    "minigame",
+    "canvas",
+    "survivor",
+    "roguelite",
+    "javascript"
+  ],
+  "author": "",
+  "license": "MIT"
+}

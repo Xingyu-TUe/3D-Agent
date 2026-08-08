@@ -1,0 +1,133 @@
+/**
+ * SkillManager.js
+ * 主动技能管理器（配置驱动）。
+ *
+ * 职责：
+ *   - 按职业从 SkillConfig 加载小技能 / 大招
+ *   - 维护冷却与持续状态
+ *   - 提供 tryCast(slot) 供 UI 按钮调用
+ *   - update(dt) 驱动所有主动技
+ */
+
+import skillConfig from '../../Data/skillConfigRaw.js';
+import BaseSkill from './BaseSkill.js';
+import { getActiveSkillClass } from './registry.js';
+import { registerAllActiveSkills } from './registerSkills.js';
+
+registerAllActiveSkills();
+
+export { registerActiveSkill } from './registry.js';
+
+export class SkillManager {
+  /**
+   * @param {object} ctx { player, enemySystem, bulletSystem, skillSystem, collision, effects, events, camera }
+   */
+  constructor(ctx) {
+    this.ctx = ctx;
+    this.config = skillConfig;
+    /** @type {BaseSkill|null} */
+    this.small = null;
+    /** @type {BaseSkill|null} */
+    this.ultimate = null;
+    this.enabled = true;
+  }
+
+  /** 按当前玩家职业装配两个主动技能 */
+  bindClass(classId) {
+    this.destroyAll();
+    const map = this.config.byClass[classId];
+    if (!map) {
+      console.warn('[SkillManager] 未知职业主动技配置:', classId);
+      return;
+    }
+    this.small = this._create(map.small);
+    this.ultimate = this._create(map.ultimate);
+  }
+
+  _create(skillId) {
+    const def = this.config.skills[skillId];
+    if (!def) {
+      console.warn('[SkillManager] 缺少技能定义:', skillId);
+      return null;
+    }
+    const Cls = getActiveSkillClass(skillId) || BaseSkill;
+    return new Cls(def, this.ctx);
+  }
+
+  getSlot(slot) {
+    return slot === 'ultimate' ? this.ultimate : this.small;
+  }
+
+  /**
+   * UI / 输入调用
+   * @param {'small'|'ultimate'} slot
+   * @returns {boolean}
+   */
+  tryCast(slot) {
+    if (!this.enabled) return false;
+    const skill = this.getSlot(slot);
+    if (!skill) return false;
+    return skill.cast();
+  }
+
+  update(dt) {
+    if (this.small) this.small.update(dt);
+    if (this.ultimate) this.ultimate.update(dt);
+  }
+
+  /** 缩短指定槽位冷却；slot 省略则两者都缩 */
+  reduceCooldown(seconds, slot) {
+    if (slot) {
+      const s = this.getSlot(slot);
+      if (s) s.reduceCooldown(seconds);
+      return;
+    }
+    if (this.small) this.small.reduceCooldown(seconds);
+    if (this.ultimate) this.ultimate.reduceCooldown(seconds);
+  }
+
+  forceReady(slot) {
+    if (slot) {
+      const s = this.getSlot(slot);
+      if (s) s.forceReady();
+      return;
+    }
+    if (this.small) this.small.forceReady();
+    if (this.ultimate) this.ultimate.forceReady();
+  }
+
+  /** 供 HUD 读取按钮状态 */
+  getUiState() {
+    const pack = (skill) => {
+      if (!skill) return null;
+      return {
+        id: skill.id,
+        name: skill.name,
+        slot: skill.slot,
+        icon: skill.def.icon || skill.id,
+        ready: skill.ready,
+        cooldownLeft: skill.cooldownLeft,
+        cooldown: skill.cooldown(),
+        cooldownRatio: skill.cooldownRatio,
+        running: skill.running,
+      };
+    };
+    return {
+      small: pack(this.small),
+      ultimate: pack(this.ultimate),
+    };
+  }
+
+  destroyAll() {
+    if (this.small) this.small.destroy();
+    if (this.ultimate) this.ultimate.destroy();
+    this.small = null;
+    this.ultimate = null;
+  }
+
+  clear() {
+    this.destroyAll();
+  }
+}
+
+export default SkillManager;

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>地狱裂隙 Hell Rift</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #05060a;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #game {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: #0a0b10;
+    }
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b3121f;
+      font-family: "Microsoft YaHei", sans-serif;
+      font-size: 20px;
+      letter-spacing: 4px;
+      background: #05060a;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">地狱裂隙 加载中…</div>
+  <canvas id="game"></canvas>
+  <script type="module">
+    import { boot } from './src/main.js';
+    window.addEventListener('load', async () => {
+      const el = document.getElementById('loading');
+      try {
+        await boot();
+        if (el) el.remove();
+      } catch (e) {
+        if (el) el.textContent = '启动失败: ' + e.message;
+        console.error(e);
+      }
+    });
+  </script>
+</body>
+</html>

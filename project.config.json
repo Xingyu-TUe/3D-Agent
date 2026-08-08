@@ -1,0 +1,28 @@
+{
+  "description": "地狱裂隙 Hell Rift - 暗黑哥特幸存者类微信小游戏（请优先导入 dist/HellRift.zip）",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": false,
+    "minified": false,
+    "newFeature": true
+  },
+  "appid": "touristappid",
+  "projectname": "HellRift",
+  "compileType": "game",
+  "srcMiniprogramRoot": "./",
+  "miniprogramRoot": "./",
+  "packOptions": {
+    "ignore": [
+      { "type": "folder", "value": "scripts" },
+      { "type": "folder", "value": "src" },
+      { "type": "folder", "value": "node_modules" },
+      { "type": "folder", "value": "dist" },
+      { "type": "file", "value": "index.html" },
+      { "type": "file", "value": "package.json" },
+      { "type": "file", "value": "package-lock.json" },
+      { "type": "file", "value": "README.md" },
+      { "type": "file", "value": ".gitignore" }
+    ]
+  }
+}

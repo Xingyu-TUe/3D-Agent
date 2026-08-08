@@ -1,0 +1,38 @@
+# 地狱裂隙 · 本地路径
+
+## 本机固定目录（请用这个）
+
+| 项 | 值 |
+|----|----|
+| **本机仓库根** | `D:\RIFT` |
+| GitHub | https://github.com/Xingyu-TUe/3D-Agent |
+| 分支 | `cursor/hell-rift-wechat-game-b0ee` |
+| 同步脚本 | `同步到本机.bat` |
+| 说明 | `同步到本机说明.md` |
+
+## 每次云端更新后
+
+在本机双击（或从仓库下载后）运行：
+
+```text
+同步到本机.bat
+```
+
+会自动 `git pull` 到 `D:\RIFT` 并打包微信目录。
+
+## 关键子路径
+
+```text
+D:\RIFT\src\                  ← 源码
+D:\RIFT\src\Game.js           ← 主逻辑
+D:\RIFT\src\Assets\           ← 素材源
+D:\RIFT\dist\wechat\          ← 微信导入目录
+D:\RIFT\game.js               ← 微信单文件入口
+```
+
+## 启动
+
+```bat
+cd /d D:\RIFT
+npm run dev
+```
