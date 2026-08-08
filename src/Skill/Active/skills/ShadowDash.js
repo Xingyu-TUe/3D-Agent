@@ -1,6 +1,5 @@
 /**
  * ShadowDash.js — 猎人小技能：暗影突进
- * 朝面向快速位移 400px，期间无敌，路径留下暗影箭。
  */
 
 import BaseSkill from '../BaseSkill.js';
@@ -38,6 +37,7 @@ export class ShadowDash extends BaseSkill {
     if (player.triggerAttack) player.triggerAttack(this.def.animation || 'attack01');
     if (effects) {
       effects.telegraph(this.fromX, this.fromY, 48, '#6b4cff', 0.2);
+      if (effects.particles) effects.particles(this.fromX, this.fromY, '#6b4cff', 10, 180);
       effects.puff(this.fromX, this.fromY, '#3a2a6a');
     }
     emitShake(events, 4, 0.12);
@@ -57,14 +57,13 @@ export class ShadowDash extends BaseSkill {
     player.y = y;
     player.invincible = Math.max(player.invincible, 0.05);
 
-    // 沿路径均匀射出暗影箭
     const want = Math.floor(this.travel * this._arrowTarget);
     while (this._arrowsFired < want && this._arrowsFired < this._arrowTarget) {
       this._fireShadowArrow(this._arrowsFired);
       this._arrowsFired++;
     }
 
-    if (effects && Math.random() < 0.5) {
+    if (effects && Math.random() < 0.55) {
       effects.puff(x, y, '#4a3a7a');
     }
 
@@ -83,7 +82,6 @@ export class ShadowDash extends BaseSkill {
     const x = this.fromX + (this.toX - this.fromX) * t;
     const y = this.fromY + (this.toY - this.fromY) * t;
     const base = player.facing;
-    // 略微散射，朝突进方向射出
     const spread = (index - (this._arrowTarget - 1) / 2) * 0.18;
     const ang = base + spread;
     const speed = 520;
@@ -106,7 +104,10 @@ export class ShadowDash extends BaseSkill {
     const { player, effects } = this.ctx;
     player.x = this.toX;
     player.y = this.toY;
-    if (effects) effects.puff(player.x, player.y, '#6b4cff');
+    if (effects) {
+      effects.puff(player.x, player.y, '#6b4cff');
+      if (effects.particles) effects.particles(player.x, player.y, '#7b5cff', 8, 120);
+    }
     this.effect({ phase: 'end' });
   }
 

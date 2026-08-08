@@ -4,14 +4,12 @@
  *
  * 生命周期：cast() → update() 循环 → destroy()
  * 约定接口：cast / update / cooldown / effect / destroy
- *
- * 注意：本模块为骨架，具体职业技能在后续步骤实现。
  */
 
 export class BaseSkill {
   /**
    * @param {object} def SkillConfig 中的技能定义
-   * @param {object} ctx { player, enemySystem, bulletSystem, collision, effects, events, camera }
+   * @param {object} ctx { player, enemySystem, bulletSystem, skillSystem, collision, effects, events, camera }
    */
   constructor(def, ctx) {
     this.def = def;
@@ -26,6 +24,8 @@ export class BaseSkill {
     this.duration = def.duration || 0;
     this.activeTime = 0;
     this.running = false;
+    /** 额外冷却倍率（物品/被动可改，默认 1） */
+    this.cooldownMul = 1;
   }
 
   get ready() {
@@ -38,9 +38,30 @@ export class BaseSkill {
     return Math.max(0, Math.min(1, this.cooldownLeft / cd));
   }
 
-  /** 配置冷却时长（秒） */
+  /**
+   * 有效冷却（秒）= 配置冷却 × 技能倍率 × 玩家 CDR
+   * player.stats.final.skillCdr ∈ [0, 0.5]
+   */
   cooldown() {
-    return this.cooldownMax;
+    const p = this.ctx && this.ctx.player;
+    const cdr = p && p.stats && p.stats.final ? (p.stats.final.skillCdr || 0) : 0;
+    const mul = Math.max(0.05, this.cooldownMul) * (1 - Math.min(0.5, Math.max(0, cdr)));
+    return Math.max(0.35, this.cooldownMax * mul);
+  }
+
+  /** 缩短剩余冷却 */
+  reduceCooldown(seconds) {
+    if (!(seconds > 0)) return;
+    this.cooldownLeft = Math.max(0, this.cooldownLeft - seconds);
+  }
+
+  /** 立即冷却（调试 / 特殊效果） */
+  forceReady() {
+    this.cooldownLeft = 0;
+  }
+
+  setCooldownLeft(seconds) {
+    this.cooldownLeft = Math.max(0, seconds);
   }
 
   /** 尝试释放；成功返回 true */
@@ -74,10 +95,8 @@ export class BaseSkill {
     }
   }
 
-  /** 子类覆盖：持续帧逻辑 */
   onUpdate(_dt) {}
 
-  /** 子类覆盖：瞬时/周期效果 */
   effect(_payload) {}
 
   /** 结束持续效果并清理（不清冷却） */
@@ -90,7 +109,7 @@ export class BaseSkill {
 
   onDestroy() {}
 
-  /** 统一表现接口占位：动画 / 震动 / 音效 / 范围提示 */
+  /** 统一表现接口：动画 / 范围提示 / 震动 / 音效 */
   playCastFeedback() {
     const { player, effects, events } = this.ctx;
     if (player && player.triggerAttack) {
@@ -98,6 +117,7 @@ export class BaseSkill {
     }
     if (effects && this.def.range > 0 && this.def.range < 5000) {
       effects.telegraph(player.x, player.y, this.def.range, '#ffd24a', 0.35);
+      if (effects.particles) effects.particles(player.x, player.y, '#ffd24a', 6, 90);
     }
     if (events) {
       events.emit('shake', { magnitude: this.slot === 'ultimate' ? 10 : 4, duration: 0.2 });

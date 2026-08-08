@@ -75,6 +75,27 @@ export class SkillManager {
     if (this.ultimate) this.ultimate.update(dt);
   }
 
+  /** 缩短指定槽位冷却；slot 省略则两者都缩 */
+  reduceCooldown(seconds, slot) {
+    if (slot) {
+      const s = this.getSlot(slot);
+      if (s) s.reduceCooldown(seconds);
+      return;
+    }
+    if (this.small) this.small.reduceCooldown(seconds);
+    if (this.ultimate) this.ultimate.reduceCooldown(seconds);
+  }
+
+  forceReady(slot) {
+    if (slot) {
+      const s = this.getSlot(slot);
+      if (s) s.forceReady();
+      return;
+    }
+    if (this.small) this.small.forceReady();
+    if (this.ultimate) this.ultimate.forceReady();
+  }
+
   /** 供 HUD 读取按钮状态 */
   getUiState() {
     const pack = (skill) => {

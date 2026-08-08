@@ -1,6 +1,5 @@
 /**
  * FrostNova.js — 法师小技能：冰霜新星
- * 范围冰爆：伤害 250% 攻击，冻结 2 秒。
  */
 
 import BaseSkill from '../BaseSkill.js';
@@ -20,7 +19,7 @@ export class FrostNova extends BaseSkill {
       effects.telegraph(player.x, player.y, range, '#7ec8ff', 0.3);
       effects.explosion(player.x, player.y, range, '#8ed4ff');
       effects.ring(player.x, player.y, range * 0.85, '#b8e8ff');
-      effects.puff(player.x, player.y, '#6ab0e0');
+      if (effects.particles) effects.particles(player.x, player.y, '#b8e8ff', 16, 160);
     }
     emitShake(events, 6, 0.18);
     emitSfx(events, this.id, 'skill_cast');
@@ -32,7 +31,6 @@ export class FrostNova extends BaseSkill {
         damageIsMul: !!params.damageIsMul,
       });
       enemySystem.damageEnemy(e, dmg, crit, 70, player.x, player.y);
-      // factor 0 = 完全冻结（沿用减速通道）
       e.applySlow(0, freezeDur);
     }
     this.effect({ phase: 'nova', count: hits.length });

@@ -23,6 +23,7 @@ export class Stats {
       moveSpeedMul: 0,
       atkSpeedMul: 0,
       pickupMul: 0,
+      skillCdr: 0,        // 主动技能冷却缩减 0~0.5
     };
     this.final = {};
     this.recompute();
@@ -53,6 +54,7 @@ export class Stats {
     f.atkSpeedMul = (b.atkSpeed || 1) * (1 + m.atkSpeedMul);
     f.pickupRadius = b.pickupRadius * (1 + m.pickupMul);
     f.radius = b.radius;
+    f.skillCdr = Math.min(0.5, Math.max(0, (b.skillCdr || 0) + m.skillCdr));
     return f;
   }
 }

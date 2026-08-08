@@ -90,6 +90,8 @@ export const GameConfig = {
     poolBullet: 300,
     poolOrb: 400,
     poolDamageText: 60,
+    // 特效池（箭雨/粒子高峰时需足够大，避免频繁扩容）
+    poolFx: 260,
     // 四叉树参数
     quadMaxObjects: 8,
     quadMaxLevels: 6,

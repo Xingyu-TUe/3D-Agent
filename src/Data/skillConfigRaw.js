@@ -44,7 +44,7 @@ export default {
       "effect": "buff_transform",
       "animation": "cast",
       "icon": "bearSummon",
-      "params": { "attackMul": 4.0, "hpMul": 2.0, "rangeMul": 1.8 }
+      "params": { "attackMul": 4.0, "hpMul": 2.0, "rangeMul": 1.8, "clawDamage": 22, "clawRange": 150 }
     },
     "shadow_dash": {
       "id": "shadow_dash",

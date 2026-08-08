@@ -181,6 +181,74 @@ guard('combat + levelup', () => {
   console.log('已获得技能:', Array.from(scene.skillSystem.skills.keys()).join(', '));
 });
 
+// 3.5) 主动技能：三职业小技能/大招释放、CD、伤害与特效池
+guard('active skills combat', () => {
+  const classes = ['druid', 'hunter', 'mage'];
+  for (const classId of classes) {
+    game.selectedClassId = classId;
+    game.scenes.switchTo('game', { classId });
+    const s = game.scenes.scenes.get('game');
+    // 冻结刷怪，避免总血量被新怪抬高
+    s.enemySystem.spawnTimer = 1e9;
+    s.enemySystem.eliteTimer = 1e9;
+    s.enemySystem.miniBossTimer = 1e9;
+    s.enemySystem.bossSpawned = true;
+
+    for (let i = 0; i < 40; i++) {
+      const ang = (i / 40) * Math.PI * 2;
+      const data = s.enemySystem._randomNormalData();
+      s.enemySystem.spawnOne(
+        data,
+        s.player.x + Math.cos(ang) * (80 + (i % 5) * 30),
+        s.player.y + Math.sin(ang) * (80 + (i % 5) * 30),
+        false,
+      );
+    }
+
+    let dealt = 0;
+    const origDmg = s.enemySystem.damageEnemy.bind(s.enemySystem);
+    s.enemySystem.damageEnemy = (e, amount, crit, knockback, fromX, fromY) => {
+      if (typeof amount === 'number' && Number.isFinite(amount) && amount > 0) {
+        dealt += amount;
+      }
+      return origDmg(e, amount, crit, knockback, fromX, fromY);
+    };
+
+    const sfxBefore = s.sfx.playCount;
+    if (!s.activeSkills.tryCast('small')) throw new Error(`${classId} small cast failed`);
+    if (!s.skillButtons.buttons.find((b) => b.slot === 'small')) {
+      throw new Error('no small skill button');
+    }
+
+    for (let i = 0; i < Math.floor(1.2 / DT); i++) step(DT);
+    const smallUi = s.activeSkills.getUiState().small;
+    if (!smallUi || smallUi.cooldownLeft <= 0) {
+      throw new Error(`${classId} small CD not ticking (left=${smallUi && smallUi.cooldownLeft})`);
+    }
+
+    s.activeSkills.forceReady('ultimate');
+    if (!s.activeSkills.tryCast('ultimate')) throw new Error(`${classId} ultimate cast failed`);
+    const wait = classId === 'mage' ? 3.2 : 1.5;
+    for (let i = 0; i < Math.floor(wait / DT); i++) step(DT);
+
+    s.enemySystem.damageEnemy = origDmg;
+    if (!(dealt > 0)) {
+      throw new Error(`${classId} skills dealt no damage (dealt=${dealt})`);
+    }
+    if (s.sfx.playCount <= sfxBefore) {
+      throw new Error(`${classId} sfx interface not triggered`);
+    }
+    const left = s.activeSkills.small.cooldownLeft;
+    s.activeSkills.reduceCooldown(5, 'small');
+    if (s.activeSkills.small.cooldownLeft > left - 4.9) {
+      throw new Error(`${classId} reduceCooldown failed`);
+    }
+    console.log(`主动技 ${classId}: dealt=${dealt.toFixed(0)} fx=${s.effects.effects.length} sfx=${s.sfx.playCount}`);
+  }
+  game.selectedClassId = 'hunter';
+  game.scenes.switchTo('game', { classId: 'hunter' });
+});
+
 // 4) 强制触发 Boss：把 boss 时间调到当前，快进
 guard('boss flow', () => {
   game.scenes.switchTo('game'); // 干净重开，专注测试 Boss 流程
@@ -219,11 +287,14 @@ guard('perf sample', () => {
     const data = s.enemySystem._randomNormalData();
     s.enemySystem.spawnOne(data, s.player.x + Math.cos(ang) * r, s.player.y + Math.sin(ang) * r, false);
   }
-  // 给玩家一堆技能
+  // 给玩家一堆技能 + 主动箭雨压测特效池
   for (const id of ['whirlwind', 'fireball', 'chainLightning', 'frostRing', 'poisonCloud', 'flyingSword']) {
     s.skillSystem.acquire(id);
     for (let k = 0; k < 4; k++) s.skillSystem.getSkill(id).upgrade();
   }
+  s.activeSkills.bindClass('hunter');
+  s.activeSkills.forceReady('ultimate');
+  s.activeSkills.tryCast('ultimate');
   game.scenes.onTouchStart(0, 140, H - 160);
   game.scenes.onTouchMove(0, 260, H - 260);
 
@@ -234,7 +305,7 @@ guard('perf sample', () => {
   for (let i = 0; i < N; i++) step(DT);
   const t1 = performance.now();
   const per = (t1 - t0) / N;
-  console.log(`满屏怪物(${s.enemySystem.count}) 平均单帧(逻辑+渲染mock): ${per.toFixed(2)} ms  => 理论 ${(1000 / per).toFixed(0)} fps 上限`);
+  console.log(`满屏怪物(${s.enemySystem.count}) 平均单帧(逻辑+渲染mock): ${per.toFixed(2)} ms  => 理论 ${(1000 / per).toFixed(0)} fps 上限；fxActive=${s.effects.effects.length}`);
 });
 
 if (errors === 0) {

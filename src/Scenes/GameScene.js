@@ -24,7 +24,8 @@ import SkillSystem from '../Skill/SkillSystem.js';
 import SummonSystem from '../Skill/SummonSystem.js';
 import UpgradeManager from '../Skill/UpgradeManager.js';
 import SkillManager from '../Skill/Active/SkillManager.js';
-import EffectSystem from '../FX/EffectSystem.js';
+import EffectManager from '../FX/EffectManager.js';
+import SfxHub from '../Audio/SfxHub.js';
 
 import Joystick from '../UI/Joystick.js';
 import HUD from '../UI/HUD.js';
@@ -46,7 +47,8 @@ export class GameScene {
     this.collision = new CollisionSystem();
 
     this.player = new Player();
-    this.effects = new EffectSystem();
+    this.effects = new EffectManager();
+    this.sfx = new SfxHub();
     this.expSystem = new ExpSystem(this.player, this.events, this.effects);
     this.enemySystem = new EnemySystem(this.player, this.events, this.effects);
     this.bulletSystem = new BulletSystem(this.player, this.enemySystem, this.collision, this.effects, this.events);
@@ -90,6 +92,7 @@ export class GameScene {
 
   _bindEvents() {
     this.events.on('shake', (p) => this.camera.shake(p.magnitude, p.duration));
+    this.sfx.bind(this.events);
 
     this.events.on('enemyDeath', (p) => {
       this.expSystem.dropOrb(p.x, p.y, p.exp);
@@ -151,6 +154,8 @@ export class GameScene {
     this.lastLoot = null;
     this.bossKilled = false;
 
+    // 先卸主动技（变身增益等需在旧玩家状态上还原），再重置玩家
+    this.activeSkills.clear();
     this.player.reset(this._classId);
     this.expSystem.clear();
     this.expSystem.player.expToNext = this.expSystem.expNeeded(1);
@@ -158,7 +163,6 @@ export class GameScene {
     this.bulletSystem.clear();
     this.summonSystem.clear();
     this.skillSystem.clear();
-    this.activeSkills.clear();
     this.effects.clear();
     this.upgradeManager.reset();
     this.upgradeManager.setSkillPool(this.player.classData.skillPool || []);

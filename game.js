@@ -1123,8 +1123,8 @@
 
   // src/Config/GameConfig.js
   var GameConfig = {
-    // 一局时长（秒），5 分钟
-    matchDuration: 300,
+    // 一局时长（秒），默认 3 分钟
+    matchDuration: 180,
     // 设计分辨率（逻辑坐标）。渲染层会按屏幕做等比缩放适配。
     design: {
       width: 720,
@@ -1154,15 +1154,15 @@
       spawnY: 0
     },
     spawn: {
-      // 刷怪曲线：第 1 分钟约 80 只，第 5 分钟约 1000 只同时在场
-      // 通过时间插值目标存活数量（value = 目标存活数）
+      // 刷怪曲线（压缩到 3 分钟局）
       curve: [
-        { time: 0, value: 30 },
-        { time: 60, value: 80 },
-        { time: 120, value: 220 },
-        { time: 180, value: 450 },
-        { time: 240, value: 720 },
-        { time: 300, value: 1e3 }
+        { time: 0, value: 40 },
+        { time: 30, value: 90 },
+        { time: 60, value: 180 },
+        { time: 90, value: 320 },
+        { time: 120, value: 500 },
+        { time: 150, value: 700 },
+        { time: 180, value: 900 }
       ],
       // 允许的最大同屏怪物（性能上限）
       maxAlive: 1200,
@@ -1175,9 +1175,10 @@
       ringMax: 720,
       // 精英出现间隔（秒）
       eliteInterval: 35,
-      // Boss 出现时间（秒）
-      bossTime: 300
-      // 若想更快看到 Boss（调试），可改此值
+      // 小 Boss：每隔半分钟一只（最终 Boss 出现后停止）
+      miniBossInterval: 30,
+      // 最终 Boss 出现时间（秒）= 3 分钟
+      bossTime: 180
     },
     exp: {
       // 获取倍率（相对原始掉落值）；1/3 = 变慢三倍
@@ -1199,6 +1200,8 @@
       poolBullet: 300,
       poolOrb: 400,
       poolDamageText: 60,
+      // 特效池（箭雨/粒子高峰时需足够大，避免频繁扩容）
+      poolFx: 260,
       // 四叉树参数
       quadMaxObjects: 8,
       quadMaxLevels: 6,
@@ -1293,7 +1296,14 @@
     arcaneMissile: "\u5965",
     meteor: "\u9668",
     blackHole: "\u6D1E",
-    apocalypse: "\u542F"
+    apocalypse: "\u542F",
+    // 主动技能 id 回退
+    thorn_field: "\u8346",
+    ancient_bear: "\u718A",
+    shadow_dash: "\u5F71",
+    death_rain: "\u96E8",
+    frost_nova: "\u971C",
+    meteor_apocalypse: "\u9668"
   };
 
   // src/UI/MainMenu.js
@@ -3188,7 +3198,9 @@
         // 以 0 为基准，final = base * (1 + damageMul)
         moveSpeedMul: 0,
         atkSpeedMul: 0,
-        pickupMul: 0
+        pickupMul: 0,
+        skillCdr: 0
+        // 主动技能冷却缩减 0~0.5
       };
       this.final = {};
       this.recompute();
@@ -3215,6 +3227,7 @@
       f.atkSpeedMul = (b.atkSpeed || 1) * (1 + m.atkSpeedMul);
       f.pickupRadius = b.pickupRadius * (1 + m.pickupMul);
       f.radius = b.radius;
+      f.skillCdr = Math.min(0.5, Math.max(0, (b.skillCdr || 0) + m.skillCdr));
       return f;
     }
   };
@@ -3252,6 +3265,8 @@
       this.hitTimer = 0;
       this._atkToggle = false;
       this.lockAnim = false;
+      this.rangeMul = 1;
+      this.transformId = null;
     }
     get maxHp() {
       return this.stats.final.maxHp;
@@ -3547,6 +3562,8 @@
       this.attackTimer = 0;
       this.hitTimer = 0;
       this.lockAnim = false;
+      this.rangeMul = 1;
+      this.transformId = null;
     }
   };
   var Player_default = Player;
@@ -3753,6 +3770,7 @@
       this.tier = "normal";
       this.isBoss = false;
       this.isElite = false;
+      this.isMiniBoss = false;
       this.attackCd = 0;
       this.hitFlash = 0;
       this.slowT = 0;
@@ -3783,6 +3801,7 @@
       this.tier = data.tier;
       this.isBoss = data.tier === "boss";
       this.isElite = !!elite;
+      this.isMiniBoss = false;
       let hp = data.hp * (scale ? scale.hp : 1);
       let dmg = data.damage * (scale ? scale.damage : 1);
       let radius = data.radius;
@@ -4336,7 +4355,7 @@
     riftLord: {
       id: "riftLord",
       name: "\u88C2\u9699\u9886\u4E3B",
-      hp: 12e3,
+      hp: 8e3,
       speed: 52,
       damage: 30,
       radius: 64,
@@ -4372,19 +4391,28 @@
   var DIFFICULTY_SCALE = {
     hp: [
       { time: 0, value: 1 },
-      { time: 120, value: 1.6 },
-      { time: 240, value: 2.8 },
-      { time: 300, value: 3.6 }
+      { time: 60, value: 1.4 },
+      { time: 120, value: 2 },
+      { time: 180, value: 2.8 }
     ],
     damage: [
       { time: 0, value: 1 },
-      { time: 150, value: 1.4 },
-      { time: 300, value: 1.9 }
+      { time: 90, value: 1.35 },
+      { time: 180, value: 1.7 }
     ]
   };
+  var MINI_BOSS_POOL = ["hellhound", "demonMage", "fallenKnight", "ghoul"];
   var enemies_default = ENEMY_DATA;
 
   // src/Enemy/EnemySystem.js
+  var MINI_BOSS_MOD = {
+    hpMul: ELITE_MODIFIER.hpMul * 2.2,
+    damageMul: ELITE_MODIFIER.damageMul * 1.35,
+    radiusMul: ELITE_MODIFIER.radiusMul * 1.15,
+    speedMul: ELITE_MODIFIER.speedMul,
+    expMul: ELITE_MODIFIER.expMul * 2,
+    tint: "#ff6b4a"
+  };
   var EnemySystem = class {
     constructor(player, events, effects) {
       this.player = player;
@@ -4394,7 +4422,9 @@
       this.enemies = [];
       this.spawnTimer = 0;
       this.eliteTimer = GameConfig_default.spawn.eliteInterval;
+      this.miniBossTimer = GameConfig_default.spawn.miniBossInterval || 30;
       this.elapsed = 0;
+      this._miniBossIndex = 0;
       this._normalPool = Object.values(enemies_default).filter((d) => d.tier === "normal");
       this.boss = null;
       this.bossSpawned = false;
@@ -4454,6 +4484,7 @@
       this.events.emit("elite", { enemy: e });
       return e;
     }
+    /** 最终 Boss（一局仅一次） */
     spawnBoss() {
       if (this.bossSpawned) return;
       this.bossSpawned = true;
@@ -4462,7 +4493,24 @@
       const e = this.spawnOne(data, pos.x, pos.y, false);
       e.boss = new Boss_default(e, data);
       this.boss = e;
-      this.events.emit("bossSpawn", { enemy: e });
+      this.events.emit("bossSpawn", { enemy: e, final: true });
+    }
+    /** 小 Boss：每隔 miniBossInterval 出现 */
+    spawnMiniBoss() {
+      const ids = MINI_BOSS_POOL || ["hellhound"];
+      const id = ids[this._miniBossIndex % ids.length];
+      this._miniBossIndex++;
+      const base = enemies_default[id] || enemies_default.hellhound;
+      const pos = this._spawnPositionRing();
+      const e = this.pool.acquire();
+      e.spawn(base, pos.x, pos.y, this._difficulty(), true, MINI_BOSS_MOD);
+      e.isMiniBoss = true;
+      e.name = (base.name || id) + "\xB7\u9738\u4E3B";
+      this.enemies.push(e);
+      this.events.emit("miniBossSpawn", { enemy: e });
+      this.effects.telegraph(e.x, e.y, e.radius * 2.2, "#ff6b4a", 0.8);
+      this.events.emit("shake", { magnitude: 6, duration: 0.25 });
+      return e;
     }
     _bossSummon(x, y, count, enemyId) {
       const data = enemies_default[enemyId] || enemies_default.skeleton;
@@ -4487,6 +4535,13 @@
       if (this.spawnTimer <= 0) {
         this.spawnTimer = GameConfig_default.spawn.interval;
         this._doSpawnWave();
+      }
+      if (!this.bossSpawned) {
+        this.miniBossTimer -= dt;
+        if (this.miniBossTimer <= 0) {
+          this.miniBossTimer = GameConfig_default.spawn.miniBossInterval || 30;
+          this.spawnMiniBoss();
+        }
       }
       if (!this.bossSpawned) {
         this.eliteTimer -= dt;
@@ -4616,6 +4671,8 @@
       this.elapsed = 0;
       this.spawnTimer = 0;
       this.eliteTimer = GameConfig_default.spawn.eliteInterval;
+      this.miniBossTimer = GameConfig_default.spawn.miniBossInterval || 30;
+      this._miniBossIndex = 0;
     }
   };
   var EnemySystem_default = EnemySystem;
@@ -4934,6 +4991,7 @@
       this._queryBuf = [];
       this._pendingMeteors = [];
       this._barrages = [];
+      this.autoEnabled = true;
     }
     hasSkill(id) {
       return this.skills.has(id);
@@ -4987,16 +5045,18 @@
       return { dmg, crit };
     }
     update(dt, camera) {
-      const atkSpeed = this.player.stats.final.atkSpeedMul;
-      for (const skill of this.skills.values()) {
-        skill.cooldownTimer -= dt;
-        if (skill.cooldownTimer <= 0) {
-          const fired = this._execute(skill);
-          if (fired) {
-            skill.cooldownTimer = skill.effectiveCooldown(atkSpeed);
-            if (skill.type !== "aura_ring") this.player.triggerAttack();
-          } else {
-            skill.cooldownTimer = 0.1;
+      if (this.autoEnabled) {
+        const atkSpeed = this.player.stats.final.atkSpeedMul;
+        for (const skill of this.skills.values()) {
+          skill.cooldownTimer -= dt;
+          if (skill.cooldownTimer <= 0) {
+            const fired = this._execute(skill);
+            if (fired) {
+              skill.cooldownTimer = skill.effectiveCooldown(atkSpeed);
+              if (skill.type !== "aura_ring") this.player.triggerAttack();
+            } else {
+              skill.cooldownTimer = 0.1;
+            }
           }
         }
       }
@@ -5397,6 +5457,7 @@
       this.activeSynergies.length = 0;
       this._pendingMeteors.length = 0;
       this._barrages.length = 0;
+      this.autoEnabled = true;
     }
   };
   var SkillSystem_default = SkillSystem;
@@ -5697,6 +5758,802 @@
   };
   var UpgradeManager_default = UpgradeManager;
 
+  // src/Data/skillConfigRaw.js
+  var skillConfigRaw_default = {
+    "version": 1,
+    "byClass": {
+      "druid": {
+        "small": "thorn_field",
+        "ultimate": "ancient_bear"
+      },
+      "hunter": {
+        "small": "shadow_dash",
+        "ultimate": "death_rain"
+      },
+      "mage": {
+        "small": "frost_nova",
+        "ultimate": "meteor_apocalypse"
+      }
+    },
+    "skills": {
+      "thorn_field": {
+        "id": "thorn_field",
+        "name": "\u8346\u68D8\u9886\u57DF",
+        "classId": "druid",
+        "slot": "small",
+        "type": "aoe_zone",
+        "cooldown": 18,
+        "duration": 6,
+        "damage": 12,
+        "range": 300,
+        "effect": "slow_dot",
+        "animation": "cast",
+        "icon": "vineBind",
+        "params": { "slowFactor": 0.5, "tickRate": 0.4 }
+      },
+      "ancient_bear": {
+        "id": "ancient_bear",
+        "name": "\u8FDC\u53E4\u718A\u7075",
+        "classId": "druid",
+        "slot": "ultimate",
+        "type": "transform",
+        "cooldown": 90,
+        "duration": 12,
+        "damage": 0,
+        "range": 0,
+        "effect": "buff_transform",
+        "animation": "cast",
+        "icon": "bearSummon",
+        "params": { "attackMul": 4, "hpMul": 2, "rangeMul": 1.8, "clawDamage": 22, "clawRange": 150 }
+      },
+      "shadow_dash": {
+        "id": "shadow_dash",
+        "name": "\u6697\u5F71\u7A81\u8FDB",
+        "classId": "hunter",
+        "slot": "small",
+        "type": "dash",
+        "cooldown": 12,
+        "duration": 0.35,
+        "damage": 20,
+        "range": 400,
+        "effect": "dash_invincible",
+        "animation": "attack01",
+        "icon": "pierceArrow",
+        "params": { "distance": 400, "shadowArrows": 5 }
+      },
+      "death_rain": {
+        "id": "death_rain",
+        "name": "\u6B7B\u4EA1\u7BAD\u96E8",
+        "classId": "hunter",
+        "slot": "ultimate",
+        "type": "screen_barrage",
+        "cooldown": 75,
+        "duration": 5,
+        "damage": 18,
+        "range": 9999,
+        "effect": "arrow_rain",
+        "animation": "shoot",
+        "icon": "arrowStorm",
+        "params": { "rate": 12 }
+      },
+      "frost_nova": {
+        "id": "frost_nova",
+        "name": "\u51B0\u971C\u65B0\u661F",
+        "classId": "mage",
+        "slot": "small",
+        "type": "nova",
+        "cooldown": 15,
+        "duration": 0.4,
+        "damage": 2.5,
+        "range": 220,
+        "effect": "freeze",
+        "animation": "cast",
+        "icon": "frostRing",
+        "params": { "freezeDuration": 2, "damageIsMul": true }
+      },
+      "meteor_apocalypse": {
+        "id": "meteor_apocalypse",
+        "name": "\u9668\u77F3\u5929\u542F",
+        "classId": "mage",
+        "slot": "ultimate",
+        "type": "channel_meteor",
+        "cooldown": 90,
+        "duration": 3,
+        "damage": 10,
+        "range": 800,
+        "effect": "meteor",
+        "animation": "cast",
+        "icon": "apocalypse",
+        "params": { "chargeTime": 3, "damageIsMul": true }
+      }
+    }
+  };
+
+  // src/Skill/Active/BaseSkill.js
+  var BaseSkill = class {
+    /**
+     * @param {object} def SkillConfig 中的技能定义
+     * @param {object} ctx { player, enemySystem, bulletSystem, skillSystem, collision, effects, events, camera }
+     */
+    constructor(def, ctx) {
+      this.def = def;
+      this.id = def.id;
+      this.name = def.name;
+      this.type = def.type;
+      this.slot = def.slot;
+      this.ctx = ctx;
+      this.cooldownMax = def.cooldown || 1;
+      this.cooldownLeft = 0;
+      this.duration = def.duration || 0;
+      this.activeTime = 0;
+      this.running = false;
+      this.cooldownMul = 1;
+    }
+    get ready() {
+      return this.cooldownLeft <= 0 && !this.running;
+    }
+    get cooldownRatio() {
+      const cd = this.cooldown();
+      if (cd <= 0) return 0;
+      return Math.max(0, Math.min(1, this.cooldownLeft / cd));
+    }
+    /**
+     * 有效冷却（秒）= 配置冷却 × 技能倍率 × 玩家 CDR
+     * player.stats.final.skillCdr ∈ [0, 0.5]
+     */
+    cooldown() {
+      const p = this.ctx && this.ctx.player;
+      const cdr = p && p.stats && p.stats.final ? p.stats.final.skillCdr || 0 : 0;
+      const mul = Math.max(0.05, this.cooldownMul) * (1 - Math.min(0.5, Math.max(0, cdr)));
+      return Math.max(0.35, this.cooldownMax * mul);
+    }
+    /** 缩短剩余冷却 */
+    reduceCooldown(seconds) {
+      if (!(seconds > 0)) return;
+      this.cooldownLeft = Math.max(0, this.cooldownLeft - seconds);
+    }
+    /** 立即冷却（调试 / 特殊效果） */
+    forceReady() {
+      this.cooldownLeft = 0;
+    }
+    setCooldownLeft(seconds) {
+      this.cooldownLeft = Math.max(0, seconds);
+    }
+    /** 尝试释放；成功返回 true */
+    cast() {
+      if (!this.ready) return false;
+      const ok = this.onCast();
+      if (!ok) return false;
+      this.running = true;
+      this.activeTime = this.duration;
+      this.cooldownLeft = this.cooldown();
+      this.playCastFeedback();
+      return true;
+    }
+    /** 子类覆盖：真正释放逻辑，返回是否成功 */
+    onCast() {
+      this.effect();
+      return true;
+    }
+    /** 每帧推进持续效果与冷却 */
+    update(dt) {
+      if (this.cooldownLeft > 0) {
+        this.cooldownLeft = Math.max(0, this.cooldownLeft - dt);
+      }
+      if (!this.running) return;
+      this.activeTime -= dt;
+      this.onUpdate(dt);
+      if (this.activeTime <= 0) {
+        this.destroy();
+      }
+    }
+    onUpdate(_dt) {
+    }
+    effect(_payload) {
+    }
+    /** 结束持续效果并清理（不清冷却） */
+    destroy() {
+      if (!this.running) return;
+      this.running = false;
+      this.activeTime = 0;
+      this.onDestroy();
+    }
+    onDestroy() {
+    }
+    /** 统一表现接口：动画 / 范围提示 / 震动 / 音效 */
+    playCastFeedback() {
+      const { player, effects, events } = this.ctx;
+      if (player && player.triggerAttack) {
+        player.triggerAttack(this.def.animation || "cast");
+      }
+      if (effects && this.def.range > 0 && this.def.range < 5e3) {
+        effects.telegraph(player.x, player.y, this.def.range, "#ffd24a", 0.35);
+        if (effects.particles) effects.particles(player.x, player.y, "#ffd24a", 6, 90);
+      }
+      if (events) {
+        events.emit("shake", { magnitude: this.slot === "ultimate" ? 10 : 4, duration: 0.2 });
+        events.emit("sfx", { id: this.id, kind: "skill_cast" });
+      }
+    }
+  };
+  var BaseSkill_default = BaseSkill;
+
+  // src/Skill/Active/registry.js
+  var ACTIVE_SKILL_REGISTRY = /* @__PURE__ */ Object.create(null);
+  function registerActiveSkill(id, SkillClass) {
+    ACTIVE_SKILL_REGISTRY[id] = SkillClass;
+  }
+  function getActiveSkillClass(id) {
+    return ACTIVE_SKILL_REGISTRY[id] || null;
+  }
+
+  // src/Skill/Active/helpers.js
+  var QUERY_BUF = [];
+  function rollDamage(player, baseDamage, opts = {}) {
+    const s = player.stats.final;
+    const atk = s.attack || 20;
+    let dmg;
+    if (opts.damageIsMul) {
+      dmg = atk * baseDamage * s.damageMul;
+    } else {
+      dmg = baseDamage * (atk / 20) * s.damageMul;
+    }
+    let crit = false;
+    if (opts.canCrit !== false && chance(s.critRate)) {
+      dmg *= s.critDmg;
+      crit = true;
+    }
+    return { dmg, crit };
+  }
+  function emitSfx(events, id, kind = "skill_cast") {
+    if (events) events.emit("sfx", { id, kind });
+  }
+  function emitShake(events, magnitude, duration) {
+    if (events) events.emit("shake", { magnitude, duration });
+  }
+
+  // src/Skill/Active/skills/ThornField.js
+  var ThornField = class extends BaseSkill_default {
+    constructor(def, ctx) {
+      super(def, ctx);
+      this.zx = 0;
+      this.zy = 0;
+      this.tickTimer = 0;
+    }
+    playCastFeedback() {
+    }
+    onCast() {
+      const { player, effects, events } = this.ctx;
+      this.zx = player.x;
+      this.zy = player.y;
+      this.tickTimer = 0;
+      if (player.triggerAttack) player.triggerAttack(this.def.animation || "cast");
+      if (effects) {
+        effects.telegraph(this.zx, this.zy, this.def.range, "#5aad3a", 0.45);
+        if (effects.zone) effects.zone(this.zx, this.zy, this.def.range, "#5aad3a", this.duration);
+        if (effects.particles) effects.particles(this.zx, this.zy, "#6bcf4a", 14, 140);
+        effects.ring(this.zx, this.zy, this.def.range * 0.9, "#6bcf4a");
+      }
+      emitShake(events, 5, 0.18);
+      emitSfx(events, this.id, "skill_cast");
+      this.effect({ phase: "spawn" });
+      return true;
+    }
+    onUpdate(dt) {
+      const { collision, enemySystem, player } = this.ctx;
+      const params = this.def.params || {};
+      const tickRate = params.tickRate || 0.4;
+      const slowFactor = params.slowFactor != null ? params.slowFactor : 0.5;
+      this.tickTimer -= dt;
+      if (this.tickTimer > 0) return;
+      this.tickTimer = tickRate;
+      const hits = collision.queryCircle(this.zx, this.zy, this.def.range, QUERY_BUF);
+      for (let i = 0; i < hits.length; i++) {
+        const e = hits[i];
+        const { dmg, crit } = rollDamage(player, this.def.damage);
+        enemySystem.damageEnemy(e, dmg, crit, 8, this.zx, this.zy);
+        e.applySlow(slowFactor, tickRate + 0.15);
+      }
+      this.effect({ phase: "tick", count: hits.length });
+    }
+    effect(_payload) {
+    }
+  };
+  var ThornField_default = ThornField;
+
+  // src/Skill/Active/skills/AncientBear.js
+  var AncientBear = class extends BaseSkill_default {
+    constructor(def, ctx) {
+      super(def, ctx);
+      this._hpAdd = 0;
+      this._dmgMulAdd = 0;
+      this._clawCd = 0;
+      this._applied = false;
+    }
+    playCastFeedback() {
+    }
+    onCast() {
+      const { player, effects, events, skillSystem } = this.ctx;
+      const params = this.def.params || {};
+      const attackMul = params.attackMul || 4;
+      const hpMul = params.hpMul || 2;
+      const rangeMul = params.rangeMul || 1.8;
+      this._dmgMulAdd = attackMul - 1;
+      player.stats.addStat("damageMul", this._dmgMulAdd);
+      this._hpAdd = player.maxHp * (hpMul - 1);
+      player.stats.addStat("maxHpAdd", this._hpAdd);
+      player.hp = Math.min(player.maxHp, player.hp + this._hpAdd);
+      player.rangeMul = rangeMul;
+      player.transformId = "ancient_bear";
+      this._applied = true;
+      if (skillSystem) skillSystem.autoEnabled = false;
+      if (player.triggerAttack) player.triggerAttack("cast");
+      if (effects) {
+        effects.ring(player.x, player.y, 90, "#c49a3c");
+        effects.explosion(player.x, player.y, 70, "#8b5a1a");
+        if (effects.particles) effects.particles(player.x, player.y, "#c49a3c", 16, 150);
+      }
+      emitShake(events, 10, 0.28);
+      emitSfx(events, this.id, "skill_ultimate");
+      this._clawCd = 0.15;
+      this.effect({ phase: "transform" });
+      return true;
+    }
+    onUpdate(dt) {
+      if (!this._applied) return;
+      const { player, collision, enemySystem, effects } = this.ctx;
+      const params = this.def.params || {};
+      const rangeMul = player.rangeMul || 1.8;
+      const range = (params.clawRange || 150) * rangeMul;
+      const clawDmg = params.clawDamage != null ? params.clawDamage : 22;
+      const atkSpeed = player.stats.final.atkSpeedMul || 1;
+      this._clawCd -= dt;
+      if (this._clawCd > 0) return;
+      this._clawCd = 0.5 / atkSpeed;
+      const hits = collision.queryCircle(player.x, player.y, range, QUERY_BUF);
+      if (hits.length === 0) return;
+      let nearest = hits[0];
+      let best = Infinity;
+      for (let i = 0; i < hits.length; i++) {
+        const e = hits[i];
+        const d = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
+        if (d < best) {
+          best = d;
+          nearest = e;
+        }
+      }
+      const ang = angleTo(player.x, player.y, nearest.x, nearest.y);
+      player.facing = ang;
+      if (player.triggerAttack) player.triggerAttack("attack01");
+      if (effects) {
+        effects.slash(player.x, player.y, ang, range, 2.2, "#c49a3c");
+        if (effects.particles) effects.particles(nearest.x, nearest.y, "#c49a3c", 4, 80);
+      }
+      for (let i = 0; i < hits.length; i++) {
+        const { dmg, crit } = rollDamage(player, clawDmg);
+        enemySystem.damageEnemy(hits[i], dmg, crit, 55, player.x, player.y);
+      }
+      this.effect({ phase: "claw", count: hits.length });
+    }
+    onDestroy() {
+      if (!this._applied) return;
+      const { player, skillSystem, effects } = this.ctx;
+      if (player.transformId === "ancient_bear") {
+        if (this._dmgMulAdd) player.stats.addStat("damageMul", -this._dmgMulAdd);
+        if (this._hpAdd) {
+          player.stats.addStat("maxHpAdd", -this._hpAdd);
+          player.hp = Math.min(player.maxHp, player.hp);
+        }
+        player.rangeMul = 1;
+        player.transformId = null;
+      }
+      if (skillSystem) skillSystem.autoEnabled = true;
+      this._applied = false;
+      if (effects && player.transformId == null) {
+        effects.puff(player.x, player.y, "#8b5a1a");
+        if (effects.particles) effects.particles(player.x, player.y, "#8b5a1a", 8, 100);
+      }
+      this.effect({ phase: "end" });
+    }
+    effect(_payload) {
+    }
+  };
+  var AncientBear_default = AncientBear;
+
+  // src/Skill/Active/skills/ShadowDash.js
+  var ShadowDash = class extends BaseSkill_default {
+    constructor(def, ctx) {
+      super(def, ctx);
+      this.fromX = 0;
+      this.fromY = 0;
+      this.toX = 0;
+      this.toY = 0;
+      this.travel = 0;
+      this._arrowsFired = 0;
+      this._arrowTarget = 0;
+    }
+    playCastFeedback() {
+    }
+    onCast() {
+      const { player, effects, events } = this.ctx;
+      const params = this.def.params || {};
+      const distance = params.distance || this.def.range || 400;
+      this._arrowTarget = params.shadowArrows || 5;
+      this._arrowsFired = 0;
+      this.travel = 0;
+      this.fromX = player.x;
+      this.fromY = player.y;
+      const ang = player.facing;
+      this.toX = this.fromX + Math.cos(ang) * distance;
+      this.toY = this.fromY + Math.sin(ang) * distance;
+      player.invincible = Math.max(player.invincible, this.duration || 0.35);
+      if (player.triggerAttack) player.triggerAttack(this.def.animation || "attack01");
+      if (effects) {
+        effects.telegraph(this.fromX, this.fromY, 48, "#6b4cff", 0.2);
+        if (effects.particles) effects.particles(this.fromX, this.fromY, "#6b4cff", 10, 180);
+        effects.puff(this.fromX, this.fromY, "#3a2a6a");
+      }
+      emitShake(events, 4, 0.12);
+      emitSfx(events, this.id, "skill_cast");
+      this.effect({ phase: "start" });
+      return true;
+    }
+    onUpdate(dt) {
+      const { player, effects, bulletSystem } = this.ctx;
+      const dur = Math.max(0.05, this.duration || 0.35);
+      this.travel = Math.min(1, this.travel + dt / dur);
+      const x = this.fromX + (this.toX - this.fromX) * this.travel;
+      const y = this.fromY + (this.toY - this.fromY) * this.travel;
+      player.x = x;
+      player.y = y;
+      player.invincible = Math.max(player.invincible, 0.05);
+      const want = Math.floor(this.travel * this._arrowTarget);
+      while (this._arrowsFired < want && this._arrowsFired < this._arrowTarget) {
+        this._fireShadowArrow(this._arrowsFired);
+        this._arrowsFired++;
+      }
+      if (effects && Math.random() < 0.55) {
+        effects.puff(x, y, "#4a3a7a");
+      }
+      if (this.travel >= 1 && this._arrowsFired < this._arrowTarget) {
+        while (this._arrowsFired < this._arrowTarget) {
+          this._fireShadowArrow(this._arrowsFired);
+          this._arrowsFired++;
+        }
+      }
+    }
+    _fireShadowArrow(index) {
+      const { bulletSystem, player, effects } = this.ctx;
+      if (!bulletSystem) return;
+      const t = (index + 0.5) / this._arrowTarget;
+      const x = this.fromX + (this.toX - this.fromX) * t;
+      const y = this.fromY + (this.toY - this.fromY) * t;
+      const base = player.facing;
+      const spread = (index - (this._arrowTarget - 1) / 2) * 0.18;
+      const ang = base + spread;
+      const speed = 520;
+      bulletSystem.fire({
+        x,
+        y,
+        vx: Math.cos(ang) * speed,
+        vy: Math.sin(ang) * speed,
+        radius: 7,
+        damage: this.def.damage,
+        life: 0.7,
+        pierce: 2,
+        color: "#7b5cff",
+        canCrit: true,
+        skillId: this.id
+      });
+      if (effects) effects.slash(x, y, ang, 36, 0.5, "#6b4cff");
+    }
+    onDestroy() {
+      const { player, effects } = this.ctx;
+      player.x = this.toX;
+      player.y = this.toY;
+      if (effects) {
+        effects.puff(player.x, player.y, "#6b4cff");
+        if (effects.particles) effects.particles(player.x, player.y, "#7b5cff", 8, 120);
+      }
+      this.effect({ phase: "end" });
+    }
+    effect(_payload) {
+    }
+  };
+  var ShadowDash_default = ShadowDash;
+
+  // src/Skill/Active/skills/DeathRain.js
+  var DeathRain = class extends BaseSkill_default {
+    constructor(def, ctx) {
+      super(def, ctx);
+      this.acc = 0;
+    }
+    playCastFeedback() {
+    }
+    onCast() {
+      const { player, effects, events, camera } = this.ctx;
+      this.acc = 0;
+      if (player.triggerAttack) player.triggerAttack(this.def.animation || "attack02");
+      if (effects) {
+        const r = this._coverRadius(camera);
+        effects.telegraph(player.x, player.y, Math.min(r, 420), "#8a6cff", 0.5);
+        effects.ring(player.x, player.y, 120, "#6b4cff");
+        if (effects.particles) effects.particles(player.x, player.y, "#9b7cff", 18, 200);
+      }
+      emitShake(events, 10, 0.35);
+      emitSfx(events, this.id, "skill_ultimate");
+      this.effect({ phase: "start" });
+      return true;
+    }
+    _coverRadius(camera) {
+      if (!camera) return 520;
+      const hw = (camera.viewWidth || 720) * 0.55;
+      const hh = (camera.viewHeight || 1280) * 0.55;
+      return Math.sqrt(hw * hw + hh * hh);
+    }
+    onUpdate(dt) {
+      const { player, effects, collision, enemySystem, events, camera } = this.ctx;
+      const rate = this.def.params && this.def.params.rate || 12;
+      this.acc += dt * rate;
+      const cover = this._coverRadius(camera);
+      while (this.acc >= 1) {
+        this.acc -= 1;
+        const a = Math.random() * TWO_PI;
+        const r = Math.random() * cover;
+        const x = player.x + Math.cos(a) * r;
+        const y = player.y + Math.sin(a) * r;
+        if (effects) {
+          effects.slash(x, y, -Math.PI / 2, 34, 0.55, "#9b7cff");
+          if (Math.random() < 0.2 && effects.particles) {
+            effects.particles(x, y, "#7b5cff", 3, 70);
+          }
+        }
+        const hits = collision.queryCircle(x, y, 40, QUERY_BUF);
+        for (let i = 0; i < hits.length; i++) {
+          const { dmg, crit } = rollDamage(player, this.def.damage);
+          enemySystem.damageEnemy(hits[i], dmg, crit, 18, x, y);
+        }
+      }
+      if (Math.random() < dt * 2) emitShake(events, 2, 0.06);
+      this.effect({ phase: "tick" });
+    }
+    onDestroy() {
+      const { effects, player } = this.ctx;
+      if (effects) effects.ring(player.x, player.y, 160, "#6b4cff");
+      this.effect({ phase: "end" });
+    }
+    effect(_payload) {
+    }
+  };
+  var DeathRain_default = DeathRain;
+
+  // src/Skill/Active/skills/FrostNova.js
+  var FrostNova = class extends BaseSkill_default {
+    playCastFeedback() {
+    }
+    onCast() {
+      const { player, effects, events, collision, enemySystem } = this.ctx;
+      const params = this.def.params || {};
+      const freezeDur = params.freezeDuration != null ? params.freezeDuration : 2;
+      const range = this.def.range || 220;
+      if (player.triggerAttack) player.triggerAttack(this.def.animation || "cast");
+      if (effects) {
+        effects.telegraph(player.x, player.y, range, "#7ec8ff", 0.3);
+        effects.explosion(player.x, player.y, range, "#8ed4ff");
+        effects.ring(player.x, player.y, range * 0.85, "#b8e8ff");
+        if (effects.particles) effects.particles(player.x, player.y, "#b8e8ff", 16, 160);
+      }
+      emitShake(events, 6, 0.18);
+      emitSfx(events, this.id, "skill_cast");
+      const hits = collision.queryCircle(player.x, player.y, range, QUERY_BUF);
+      for (let i = 0; i < hits.length; i++) {
+        const e = hits[i];
+        const { dmg, crit } = rollDamage(player, this.def.damage, {
+          damageIsMul: !!params.damageIsMul
+        });
+        enemySystem.damageEnemy(e, dmg, crit, 70, player.x, player.y);
+        e.applySlow(0, freezeDur);
+      }
+      this.effect({ phase: "nova", count: hits.length });
+      return true;
+    }
+    effect(_payload) {
+    }
+  };
+  var FrostNova_default = FrostNova;
+
+  // src/Skill/Active/skills/MeteorApocalypse.js
+  var MeteorApocalypse = class extends BaseSkill_default {
+    constructor(def, ctx) {
+      super(def, ctx);
+      this.tx = 0;
+      this.ty = 0;
+      this._impacted = false;
+      this._pulse = 0;
+    }
+    playCastFeedback() {
+    }
+    onCast() {
+      const { player, effects, events, collision } = this.ctx;
+      const range = this.def.range || 800;
+      const charge = this.def.params && this.def.params.chargeTime || this.duration || 3;
+      const nearest = collision.nearest(player.x, player.y, range, null);
+      if (nearest) {
+        this.tx = nearest.x;
+        this.ty = nearest.y;
+      } else {
+        this.tx = player.x + Math.cos(player.facing) * 180;
+        this.ty = player.y + Math.sin(player.facing) * 180;
+      }
+      this._impacted = false;
+      this._pulse = 0;
+      if (player.triggerAttack) player.triggerAttack(this.def.animation || "cast");
+      if (effects) {
+        effects.telegraph(this.tx, this.ty, Math.min(range * 0.4, 280), "#ff6a2a", charge);
+        effects.ring(player.x, player.y, 80, "#ff9a4a");
+        if (effects.particles) effects.particles(player.x, player.y, "#ff8a3a", 10, 100);
+      }
+      emitShake(events, 4, 0.15);
+      emitSfx(events, this.id, "skill_channel");
+      this.effect({ phase: "channel" });
+      return true;
+    }
+    onUpdate(dt) {
+      const { effects, player } = this.ctx;
+      this._pulse += dt;
+      if (effects && this._pulse >= 0.4) {
+        this._pulse = 0;
+        effects.ring(this.tx, this.ty, 60 + Math.random() * 40, "#ff8a3a");
+        if (effects.particles) effects.particles(player.x, player.y, "#ff6a2a", 3, 60);
+      }
+    }
+    onDestroy() {
+      if (this._impacted) return;
+      this._impacted = true;
+      this._impact();
+    }
+    _impact() {
+      const { player, effects, events, collision, enemySystem } = this.ctx;
+      const params = this.def.params || {};
+      const range = this.def.range || 800;
+      if (effects) {
+        if (effects.meteorFall) effects.meteorFall(this.tx, this.ty, Math.min(range * 0.35, 240), "#ff4a1a", 0.4);
+        effects.explosion(this.tx, this.ty, Math.min(range * 0.45, 300), "#ff4a1a");
+        effects.ring(this.tx, this.ty, range * 0.3, "#ffb06a");
+        if (effects.particles) effects.particles(this.tx, this.ty, "#ff6a2a", 20, 220);
+      }
+      emitShake(events, 14, 0.45);
+      emitSfx(events, this.id, "skill_ultimate");
+      const hits = collision.queryCircle(this.tx, this.ty, range, QUERY_BUF);
+      for (let i = 0; i < hits.length; i++) {
+        const { dmg, crit } = rollDamage(player, this.def.damage, {
+          damageIsMul: !!params.damageIsMul
+        });
+        enemySystem.damageEnemy(hits[i], dmg, crit, 90, this.tx, this.ty);
+      }
+      this.effect({ phase: "impact", count: hits.length });
+    }
+    effect(_payload) {
+    }
+  };
+  var MeteorApocalypse_default = MeteorApocalypse;
+
+  // src/Skill/Active/registerSkills.js
+  var registered = false;
+  function registerAllActiveSkills() {
+    if (registered) return;
+    registerActiveSkill("thorn_field", ThornField_default);
+    registerActiveSkill("ancient_bear", AncientBear_default);
+    registerActiveSkill("shadow_dash", ShadowDash_default);
+    registerActiveSkill("death_rain", DeathRain_default);
+    registerActiveSkill("frost_nova", FrostNova_default);
+    registerActiveSkill("meteor_apocalypse", MeteorApocalypse_default);
+    registered = true;
+  }
+
+  // src/Skill/Active/SkillManager.js
+  registerAllActiveSkills();
+  var SkillManager = class {
+    /**
+     * @param {object} ctx { player, enemySystem, bulletSystem, skillSystem, collision, effects, events, camera }
+     */
+    constructor(ctx) {
+      this.ctx = ctx;
+      this.config = skillConfigRaw_default;
+      this.small = null;
+      this.ultimate = null;
+      this.enabled = true;
+    }
+    /** 按当前玩家职业装配两个主动技能 */
+    bindClass(classId) {
+      this.destroyAll();
+      const map = this.config.byClass[classId];
+      if (!map) {
+        console.warn("[SkillManager] \u672A\u77E5\u804C\u4E1A\u4E3B\u52A8\u6280\u914D\u7F6E:", classId);
+        return;
+      }
+      this.small = this._create(map.small);
+      this.ultimate = this._create(map.ultimate);
+    }
+    _create(skillId) {
+      const def = this.config.skills[skillId];
+      if (!def) {
+        console.warn("[SkillManager] \u7F3A\u5C11\u6280\u80FD\u5B9A\u4E49:", skillId);
+        return null;
+      }
+      const Cls = getActiveSkillClass(skillId) || BaseSkill_default;
+      return new Cls(def, this.ctx);
+    }
+    getSlot(slot) {
+      return slot === "ultimate" ? this.ultimate : this.small;
+    }
+    /**
+     * UI / 输入调用
+     * @param {'small'|'ultimate'} slot
+     * @returns {boolean}
+     */
+    tryCast(slot) {
+      if (!this.enabled) return false;
+      const skill = this.getSlot(slot);
+      if (!skill) return false;
+      return skill.cast();
+    }
+    update(dt) {
+      if (this.small) this.small.update(dt);
+      if (this.ultimate) this.ultimate.update(dt);
+    }
+    /** 缩短指定槽位冷却；slot 省略则两者都缩 */
+    reduceCooldown(seconds, slot) {
+      if (slot) {
+        const s = this.getSlot(slot);
+        if (s) s.reduceCooldown(seconds);
+        return;
+      }
+      if (this.small) this.small.reduceCooldown(seconds);
+      if (this.ultimate) this.ultimate.reduceCooldown(seconds);
+    }
+    forceReady(slot) {
+      if (slot) {
+        const s = this.getSlot(slot);
+        if (s) s.forceReady();
+        return;
+      }
+      if (this.small) this.small.forceReady();
+      if (this.ultimate) this.ultimate.forceReady();
+    }
+    /** 供 HUD 读取按钮状态 */
+    getUiState() {
+      const pack = (skill) => {
+        if (!skill) return null;
+        return {
+          id: skill.id,
+          name: skill.name,
+          slot: skill.slot,
+          icon: skill.def.icon || skill.id,
+          ready: skill.ready,
+          cooldownLeft: skill.cooldownLeft,
+          cooldown: skill.cooldown(),
+          cooldownRatio: skill.cooldownRatio,
+          running: skill.running
+        };
+      };
+      return {
+        small: pack(this.small),
+        ultimate: pack(this.ultimate)
+      };
+    }
+    destroyAll() {
+      if (this.small) this.small.destroy();
+      if (this.ultimate) this.ultimate.destroy();
+      this.small = null;
+      this.ultimate = null;
+    }
+    clear() {
+      this.destroyAll();
+    }
+  };
+  var SkillManager_default = SkillManager;
+
   // src/FX/DamageText.js
   var DamageText = class {
     constructor() {
@@ -5771,7 +6628,7 @@
   };
   var DamageText_default = DamageText;
 
-  // src/FX/EffectSystem.js
+  // src/FX/EffectManager.js
   var Effect = class {
     constructor() {
       this.active = false;
@@ -5788,22 +6645,34 @@
       this.maxLife = 0;
       this.color = "#fff";
       this.chain = null;
+      this.vx = 0;
+      this.vy = 0;
+      this.size = 0;
     }
     reset() {
       this.active = false;
       this.chain = null;
+      this.vx = 0;
+      this.vy = 0;
+      this.size = 0;
     }
     update(dt) {
+      if (this.vx || this.vy) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+      }
       this.life -= dt;
       if (this.life <= 0) this.active = false;
       return this.active;
     }
   };
-  var EffectSystem = class {
+  var EffectManager = class {
     constructor() {
-      this.fxPool = new ObjectPool_default(() => new Effect(), (e) => e.reset(), 60);
+      const fxCap = GameConfig_default.performance.poolFx || 220;
+      const textCap = GameConfig_default.performance.poolDamageText || 60;
+      this.fxPool = new ObjectPool_default(() => new Effect(), (e) => e.reset(), fxCap);
       this.effects = [];
-      this.textPool = new ObjectPool_default(() => new DamageText_default(), (t) => t.reset(), GameConfig_default.performance.poolDamageText);
+      this.textPool = new ObjectPool_default(() => new DamageText_default(), (t) => t.reset(), textCap);
       this.texts = [];
     }
     _spawn(type, cfg) {
@@ -5819,6 +6688,9 @@
       e.color = cfg.color || "#fff";
       e.life = e.maxLife = cfg.life || 0.3;
       e.chain = cfg.chain || null;
+      e.vx = cfg.vx || 0;
+      e.vy = cfg.vy || 0;
+      e.size = cfg.size || 0;
       e.active = true;
       this.effects.push(e);
       return e;
@@ -5841,13 +6713,50 @@
     telegraph(x, y, radius, color, life) {
       return this._spawn("telegraph", { x, y, radius, color: color || "#ff3b3b", life: life || 1 });
     }
+    /** 持续 AOE 地面区域（荆棘领域等） */
+    zone(x, y, radius, color, life) {
+      return this._spawn("zone", {
+        x,
+        y,
+        radius,
+        color: color || "#5aad3a",
+        life: life || 3
+      });
+    }
+    /** 对象池粒子团（无额外 new） */
+    particles(x, y, color, count = 8, speed = 120) {
+      const n = Math.min(24, count | 0);
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * TWO_PI;
+        const sp = speed * (0.45 + Math.random() * 0.8);
+        this._spawn("spark", {
+          x,
+          y,
+          vx: Math.cos(a) * sp,
+          vy: Math.sin(a) * sp,
+          radius: 3 + Math.random() * 4,
+          color: color || "#ffd24a",
+          life: 0.25 + Math.random() * 0.25
+        });
+      }
+    }
+    /** 陨石坠落拖尾 + 冲击预备 */
+    meteorFall(x, y, radius, color, life = 0.45) {
+      this._spawn("meteor", {
+        x,
+        y,
+        radius: radius || 80,
+        color: color || "#ff6a2a",
+        life
+      });
+      this.particles(x, y - 40, color || "#ff8a3a", 10, 160);
+    }
     damageText(x, y, value, crit) {
       if (!GameConfig_default.display.showCombatNumbers) return;
       const t = this.textPool.acquire();
       t.spawn(x, y, value, crit, "damage");
       this.texts.push(t);
     }
-    /** 拾取经验飘字（受同一显示开关控制） */
     expText(x, y, value) {
       if (!GameConfig_default.display.showCombatNumbers) return;
       const t = this.textPool.acquire();
@@ -5859,14 +6768,16 @@
         const e = this.effects[i];
         if (!e.update(dt)) {
           this.fxPool.release(e);
-          this.effects.splice(i, 1);
+          const last = this.effects.pop();
+          if (last !== e) this.effects[i] = last;
         }
       }
       for (let i = this.texts.length - 1; i >= 0; i--) {
         const t = this.texts[i];
         if (!t.update(dt)) {
           this.textPool.release(t);
-          this.texts.splice(i, 1);
+          const last = this.texts.pop();
+          if (last !== t) this.texts[i] = last;
         }
       }
     }
@@ -5881,7 +6792,7 @@
       }
     }
     _renderEffect(ctx, camera, e) {
-      const t = e.life / e.maxLife;
+      const t = e.maxLife > 0 ? e.life / e.maxLife : 0;
       const sx = camera.worldToScreenX(e.x);
       const sy = camera.worldToScreenY(e.y);
       switch (e.type) {
@@ -5930,8 +6841,6 @@
           ctx.globalAlpha = Math.min(1, t * 2);
           ctx.strokeStyle = e.color;
           ctx.lineWidth = 3;
-          ctx.shadowColor = e.color;
-          ctx.shadowBlur = 8;
           ctx.beginPath();
           for (let i = 0; i < e.chain.length; i++) {
             const p = e.chain[i];
@@ -5960,6 +6869,16 @@
           ctx.restore();
           break;
         }
+        case "spark": {
+          ctx.save();
+          ctx.globalAlpha = t * 0.9;
+          ctx.fillStyle = e.color;
+          ctx.beginPath();
+          ctx.arc(sx, sy, Math.max(1, e.radius * t), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          break;
+        }
         case "telegraph": {
           ctx.save();
           ctx.globalAlpha = 0.25 + (1 - t) * 0.4;
@@ -5971,8 +6890,56 @@
           ctx.strokeStyle = e.color;
           ctx.lineWidth = 3;
           ctx.beginPath();
-          ctx.arc(sx, sy, e.radius * (1 - t), 0, Math.PI * 2);
+          ctx.arc(sx, sy, e.radius * (1 - t * 0.15), 0, Math.PI * 2);
           ctx.stroke();
+          ctx.restore();
+          break;
+        }
+        case "zone": {
+          const pulse = 0.82 + 0.18 * Math.sin((1 - t) * 14);
+          const r = e.radius * pulse;
+          ctx.save();
+          const grad = ctx.createRadialGradient(sx, sy, r * 0.15, sx, sy, r);
+          grad.addColorStop(0, "rgba(120,200,70,0.28)");
+          grad.addColorStop(0.65, "rgba(70,140,40,0.18)");
+          grad.addColorStop(1, "rgba(30,60,15,0)");
+          ctx.globalAlpha = 0.55 + 0.35 * t;
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(sx, sy, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = e.color;
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 0.35 + 0.4 * t;
+          ctx.beginPath();
+          ctx.arc(sx, sy, r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+          break;
+        }
+        case "meteor": {
+          ctx.save();
+          const fall = 1 - t;
+          const trailY = sy - (1 - fall) * 180;
+          const grad = ctx.createLinearGradient(sx, trailY, sx, sy);
+          grad.addColorStop(0, "rgba(255,200,80,0)");
+          grad.addColorStop(0.6, `rgba(255,120,40,${0.55 * t})`);
+          grad.addColorStop(1, `rgba(255,60,20,${0.85 * t})`);
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 10 * t + 2;
+          ctx.beginPath();
+          ctx.moveTo(sx + 30, trailY);
+          ctx.lineTo(sx, sy);
+          ctx.stroke();
+          const r = e.radius * (0.35 + fall * 0.75);
+          const g2 = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+          g2.addColorStop(0, `rgba(255,230,160,${t})`);
+          g2.addColorStop(0.5, `rgba(255,100,30,${0.7 * t})`);
+          g2.addColorStop(1, "rgba(80,10,0,0)");
+          ctx.fillStyle = g2;
+          ctx.beginPath();
+          ctx.arc(sx, sy, r, 0, Math.PI * 2);
+          ctx.fill();
           ctx.restore();
           break;
         }
@@ -5985,8 +6952,40 @@
       this.effects.length = 0;
       this.texts.length = 0;
     }
+    /** 池占用（调试/测试） */
+    get stats() {
+      return {
+        fxActive: this.effects.length,
+        textActive: this.texts.length,
+        fxFree: this.fxPool.freeCount
+      };
+    }
   };
-  var EffectSystem_default = EffectSystem;
+  var EffectManager_default = EffectManager;
+
+  // src/Audio/SfxHub.js
+  var SfxHub = class {
+    constructor() {
+      this.enabled = true;
+      this.lastId = null;
+      this.lastKind = null;
+      this.playCount = 0;
+      this.handler = null;
+    }
+    /** 绑定到 EventBus */
+    bind(events) {
+      if (!events) return;
+      events.on("sfx", (p) => this.play(p));
+    }
+    play(payload = {}) {
+      if (!this.enabled) return;
+      this.lastId = payload.id || null;
+      this.lastKind = payload.kind || "sfx";
+      this.playCount++;
+      if (this.handler) this.handler(payload);
+    }
+  };
+  var SfxHub_default = SfxHub;
 
   // src/UI/Joystick.js
   var Joystick = class {
@@ -6221,8 +7220,8 @@
       const size = 34;
       const gap = 6;
       const totalW = skills.length * (size + gap) - gap;
-      let x = (this.w - totalW) / 2;
-      const y = this.h - size - 14;
+      let x = Math.max(12, (this.w - totalW) / 2 - 40);
+      const y = this.h - size - 96;
       for (let i = 0; i < skills.length; i++) {
         const s = skills[i];
         ctx.fillStyle = "rgba(15,17,24,0.75)";
@@ -6278,6 +7277,155 @@
     }
   };
   var HUD_default = HUD;
+
+  // src/UI/SkillButtons.js
+  var SLOT_ORDER = ["small", "ultimate"];
+  var SkillButtons = class {
+    constructor() {
+      this.w = 0;
+      this.h = 0;
+      this.safeBottom = 0;
+      this.buttons = [];
+      this._flash = { small: 0, ultimate: 0 };
+      this.visible = true;
+    }
+    resize(w, h, safeBottom = 0) {
+      this.w = w;
+      this.h = h;
+      this.safeBottom = safeBottom || 0;
+      const marginR = 28;
+      const marginB = 36 + this.safeBottom;
+      const rSmall = 34;
+      const rUlt = 42;
+      const gap = 14;
+      const ultX = w - marginR - rUlt;
+      const ultY = h - marginB - rUlt;
+      const smallX = ultX - gap - rSmall - rUlt;
+      const smallY = ultY + (rUlt - rSmall);
+      this.buttons = [
+        { slot: "small", x: smallX, y: smallY, r: rSmall },
+        { slot: "ultimate", x: ultX, y: ultY, r: rUlt }
+      ];
+    }
+    update(dt) {
+      for (const k of SLOT_ORDER) {
+        if (this._flash[k] > 0) this._flash[k] = Math.max(0, this._flash[k] - dt);
+      }
+    }
+    /**
+     * @param {number} x
+     * @param {number} y
+     * @returns {'small'|'ultimate'|null}
+     */
+    hitTest(x, y) {
+      if (!this.visible) return null;
+      for (let i = this.buttons.length - 1; i >= 0; i--) {
+        const b = this.buttons[i];
+        const dx = x - b.x;
+        const dy = y - b.y;
+        const pad = 8;
+        if (dx * dx + dy * dy <= (b.r + pad) * (b.r + pad)) return b.slot;
+      }
+      return null;
+    }
+    /** 释放成功时的按钮闪一下 */
+    flash(slot) {
+      if (slot) this._flash[slot] = 0.18;
+    }
+    /**
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {{ small: object|null, ultimate: object|null }} uiState from SkillManager.getUiState()
+     */
+    render(ctx, uiState) {
+      if (!this.visible || !uiState) return;
+      for (const b of this.buttons) {
+        this._drawButton(ctx, b, uiState[b.slot]);
+      }
+    }
+    _drawButton(ctx, b, state) {
+      const ready = !!(state && state.ready);
+      const running = !!(state && state.running);
+      const flash = this._flash[b.slot] > 0;
+      const isUlt = b.slot === "ultimate";
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r + 3, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(8,10,16,0.72)";
+      ctx.fill();
+      const base = ready ? isUlt ? "rgba(90,28,22,0.92)" : "rgba(22,36,28,0.92)" : "rgba(18,20,28,0.88)";
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fillStyle = flash ? "rgba(255,210,74,0.35)" : base;
+      ctx.fill();
+      let stroke = "#3a4254";
+      let lineW = 2;
+      if (running) {
+        stroke = "#ffd24a";
+        lineW = 3;
+      } else if (ready) {
+        stroke = isUlt ? "#e85a3a" : "#5ecf7a";
+        lineW = 3;
+      }
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineW;
+      ctx.stroke();
+      const iconKey = state ? state.icon || state.id : null;
+      const iconImg = iconKey ? AssetLoader_default.skillIcon(iconKey) : null;
+      const iconSize = b.r * 1.35;
+      if (iconImg) {
+        ctx.save();
+        if (!ready && !running) ctx.globalAlpha = 0.45;
+        drawIcon(ctx, iconImg, b.x, b.y - 2, iconSize);
+        ctx.restore();
+      } else {
+        const glyph = iconKey && SKILL_ICONS[iconKey] || (state && state.name ? state.name[0] : "?");
+        ctx.fillStyle = ready ? "#e6edf3" : "#6a7385";
+        ctx.font = `bold ${Math.round(b.r * 0.7)}px "Microsoft YaHei", sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(glyph, b.x, b.y - 1);
+      }
+      if (state && !ready && state.cooldown > 0) {
+        const ratio = Math.max(0, Math.min(1, state.cooldownRatio));
+        if (ratio > 0) {
+          ctx.beginPath();
+          ctx.moveTo(b.x, b.y);
+          ctx.arc(b.x, b.y, b.r - 1, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio, false);
+          ctx.closePath();
+          ctx.fillStyle = "rgba(0,0,0,0.55)";
+          ctx.fill();
+        }
+        const sec = Math.ceil(state.cooldownLeft);
+        if (sec > 0) {
+          ctx.fillStyle = "#e6edf3";
+          ctx.font = `bold ${Math.round(b.r * 0.55)}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(String(sec), b.x, b.y + 1);
+        }
+      }
+      if (ready && !running) {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y + b.r * 0.55, 3, 0, Math.PI * 2);
+        ctx.fillStyle = isUlt ? "#ff8a5a" : "#7dff9a";
+        ctx.fill();
+      }
+      if (state && state.name) {
+        const label = isUlt ? "\u5927\u62DB" : "\u6280\u80FD";
+        const tw = Math.max(36, label.length * 12 + 10);
+        const lx = b.x - tw / 2;
+        const ly = b.y + b.r + 6;
+        ctx.fillStyle = "rgba(10,12,18,0.65)";
+        roundRect(ctx, lx, ly, tw, 16, 4);
+        ctx.fill();
+        ctx.fillStyle = ready ? "#e6edf3" : "#8b9cb3";
+        ctx.font = 'bold 10px "Microsoft YaHei", sans-serif';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, b.x, ly + 8);
+      }
+    }
+  };
+  var SkillButtons_default = SkillButtons;
 
   // src/UI/LevelUpUI.js
   var LevelUpUI = class {
@@ -6670,7 +7818,8 @@
       this.background = new Background_default();
       this.collision = new CollisionSystem_default();
       this.player = new Player_default();
-      this.effects = new EffectSystem_default();
+      this.effects = new EffectManager_default();
+      this.sfx = new SfxHub_default();
       this.expSystem = new ExpSystem_default(this.player, this.events, this.effects);
       this.enemySystem = new EnemySystem_default(this.player, this.events, this.effects);
       this.bulletSystem = new BulletSystem_default(this.player, this.enemySystem, this.collision, this.effects, this.events);
@@ -6685,9 +7834,20 @@
         this.summonSystem
       );
       this.upgradeManager = new UpgradeManager_default(this.skillSystem, this.player);
+      this.activeSkills = new SkillManager_default({
+        player: this.player,
+        enemySystem: this.enemySystem,
+        bulletSystem: this.bulletSystem,
+        skillSystem: this.skillSystem,
+        collision: this.collision,
+        effects: this.effects,
+        events: this.events,
+        camera: this.camera
+      });
       this.joystick = new Joystick_default();
       this.hud = new HUD_default();
       this.hud.showFps = GameConfig_default.debug.showFps;
+      this.skillButtons = new SkillButtons_default();
       this.levelUpUI = new LevelUpUI_default();
       this.bossBar = new BossBar_default();
       this.settingsPanel = new SettingsPanel_default();
@@ -6701,6 +7861,7 @@
     }
     _bindEvents() {
       this.events.on("shake", (p) => this.camera.shake(p.magnitude, p.duration));
+      this.sfx.bind(this.events);
       this.events.on("enemyDeath", (p) => {
         this.expSystem.dropOrb(p.x, p.y, p.exp);
       });
@@ -6709,6 +7870,9 @@
         if (this.state === "playing") this._openLevelUp();
       });
       this.events.on("bossSpawn", () => {
+        this.bossBar.triggerBanner();
+      });
+      this.events.on("miniBossSpawn", () => {
         this.bossBar.triggerBanner();
       });
       this.events.on("bossDead", () => {
@@ -6745,6 +7909,7 @@
       this.endTimer = 0;
       this.lastLoot = null;
       this.bossKilled = false;
+      this.activeSkills.clear();
       this.player.reset(this._classId);
       this.expSystem.clear();
       this.expSystem.player.expToNext = this.expSystem.expNeeded(1);
@@ -6759,13 +7924,16 @@
       for (const id of this.player.classData.startSkills) {
         this.skillSystem.acquire(id);
       }
+      this.activeSkills.bindClass(this._classId);
       this.camera.snapTo(this.player.x, this.player.y);
     }
     resize(w, h) {
       this.camera.resize(w, h);
       this.joystick.resize(w, h);
       const safeTop = this.game.safeArea ? this.game.safeArea.top : 0;
+      const safeBottom = this.game.safeArea ? this.game.safeArea.bottom || 0 : 0;
       this.hud.resize(w, h, safeTop);
+      this.skillButtons.resize(w, h, safeBottom);
       this.levelUpUI.resize(w, h);
       this.bossBar.resize(w, h);
       this.settingsPanel.resize(w, h);
@@ -6807,11 +7975,13 @@
       if (!freezeSpawns) {
         this.skillSystem.update(dt, this.camera);
         this.summonSystem.update(dt);
+        this.activeSkills.update(dt);
       }
       this.bulletSystem.update(dt, this.camera);
       this.expSystem.update(dt, this.camera);
       this.effects.update(dt);
       this.bossBar.update(dt);
+      this.skillButtons.update(dt);
     }
     _goResult() {
       const goldEarned = Math.floor(this.player.kills * 0.8 + (this.victory ? 200 : 0));
@@ -6849,6 +8019,7 @@
       this.effects.renderTexts(ctx, cam);
       if (GameConfig_default.debug.showQuadTree) this.collision.debugRender(ctx, cam);
       this.hud.render(ctx, this._hudState());
+      this.skillButtons.render(ctx, this.activeSkills.getUiState());
       const safeTop = this.game.safeArea ? this.game.safeArea.top : 0;
       this.bossBar.render(ctx, this.enemySystem.boss, safeTop);
       this.joystick.render(ctx);
@@ -6924,6 +8095,13 @@
       if (this.hud.hitSettings(x, y)) {
         this.state = "settings";
         this.joystick.reset();
+        return;
+      }
+      const skillSlot = this.skillButtons.hitTest(x, y);
+      if (skillSlot) {
+        if (this.activeSkills.tryCast(skillSlot)) {
+          this.skillButtons.flash(skillSlot);
+        }
         return;
       }
       this.joystick.onTouchStart(id, x, y);

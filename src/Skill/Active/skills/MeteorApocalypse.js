@@ -1,6 +1,5 @@
 /**
  * MeteorApocalypse.js — 法师大招：陨石天启
- * 3 秒蓄力后召唤陨石：范围 800，伤害 1000% 攻击。
  */
 
 import BaseSkill from '../BaseSkill.js';
@@ -22,7 +21,6 @@ export class MeteorApocalypse extends BaseSkill {
     const range = this.def.range || 800;
     const charge = (this.def.params && this.def.params.chargeTime) || this.duration || 3;
 
-    // 落点：优先最近敌人，否则面向前方
     const nearest = collision.nearest(player.x, player.y, range, null);
     if (nearest) {
       this.tx = nearest.x;
@@ -36,8 +34,10 @@ export class MeteorApocalypse extends BaseSkill {
 
     if (player.triggerAttack) player.triggerAttack(this.def.animation || 'cast');
     if (effects) {
-      effects.telegraph(this.tx, this.ty, range * 0.45, '#ff6a2a', charge);
+      // 伤害范围提示（蓄力全程）
+      effects.telegraph(this.tx, this.ty, Math.min(range * 0.4, 280), '#ff6a2a', charge);
       effects.ring(player.x, player.y, 80, '#ff9a4a');
+      if (effects.particles) effects.particles(player.x, player.y, '#ff8a3a', 10, 100);
     }
     emitShake(events, 4, 0.15);
     emitSfx(events, this.id, 'skill_channel');
@@ -51,7 +51,7 @@ export class MeteorApocalypse extends BaseSkill {
     if (effects && this._pulse >= 0.4) {
       this._pulse = 0;
       effects.ring(this.tx, this.ty, 60 + Math.random() * 40, '#ff8a3a');
-      effects.puff(player.x, player.y, '#ff6a2a');
+      if (effects.particles) effects.particles(player.x, player.y, '#ff6a2a', 3, 60);
     }
   }
 
@@ -67,9 +67,10 @@ export class MeteorApocalypse extends BaseSkill {
     const range = this.def.range || 800;
 
     if (effects) {
-      effects.explosion(this.tx, this.ty, Math.min(range * 0.5, 320), '#ff4a1a');
-      effects.ring(this.tx, this.ty, range * 0.35, '#ffb06a');
-      effects.puff(this.tx, this.ty, '#ff6a2a');
+      if (effects.meteorFall) effects.meteorFall(this.tx, this.ty, Math.min(range * 0.35, 240), '#ff4a1a', 0.4);
+      effects.explosion(this.tx, this.ty, Math.min(range * 0.45, 300), '#ff4a1a');
+      effects.ring(this.tx, this.ty, range * 0.3, '#ffb06a');
+      if (effects.particles) effects.particles(this.tx, this.ty, '#ff6a2a', 20, 220);
     }
     emitShake(events, 14, 0.45);
     emitSfx(events, this.id, 'skill_ultimate');

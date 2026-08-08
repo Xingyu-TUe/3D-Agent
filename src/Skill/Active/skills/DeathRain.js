@@ -1,6 +1,5 @@
 /**
  * DeathRain.js — 猎人大招：死亡箭雨
- * 全屏（以玩家为中心的大范围）随机箭雨，持续 5 秒。
  */
 
 import BaseSkill from '../BaseSkill.js';
@@ -23,6 +22,7 @@ export class DeathRain extends BaseSkill {
       const r = this._coverRadius(camera);
       effects.telegraph(player.x, player.y, Math.min(r, 420), '#8a6cff', 0.5);
       effects.ring(player.x, player.y, 120, '#6b4cff');
+      if (effects.particles) effects.particles(player.x, player.y, '#9b7cff', 18, 200);
     }
     emitShake(events, 10, 0.35);
     emitSfx(events, this.id, 'skill_ultimate');
@@ -52,7 +52,9 @@ export class DeathRain extends BaseSkill {
 
       if (effects) {
         effects.slash(x, y, -Math.PI / 2, 34, 0.55, '#9b7cff');
-        if (Math.random() < 0.25) effects.puff(x, y, '#5a3a9a');
+        if (Math.random() < 0.2 && effects.particles) {
+          effects.particles(x, y, '#7b5cff', 3, 70);
+        }
       }
 
       const hits = collision.queryCircle(x, y, 40, QUERY_BUF);
@@ -62,7 +64,6 @@ export class DeathRain extends BaseSkill {
       }
     }
 
-    // 持续微震增强压迫感
     if (Math.random() < dt * 2) emitShake(events, 2, 0.06);
     this.effect({ phase: 'tick' });
   }
