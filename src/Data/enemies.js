@@ -117,7 +117,7 @@ export const ENEMY_DATA = {
   riftLord: {
     id: 'riftLord',
     name: '裂隙领主',
-    hp: 12000,
+    hp: 8000,
     speed: 52,
     damage: 30,
     radius: 64,
@@ -156,15 +156,18 @@ export const ELITE_MODIFIER = {
 export const DIFFICULTY_SCALE = {
   hp: [
     { time: 0, value: 1.0 },
-    { time: 120, value: 1.6 },
-    { time: 240, value: 2.8 },
-    { time: 300, value: 3.6 },
+    { time: 60, value: 1.4 },
+    { time: 120, value: 2.0 },
+    { time: 180, value: 2.8 },
   ],
   damage: [
     { time: 0, value: 1.0 },
-    { time: 150, value: 1.4 },
-    { time: 300, value: 1.9 },
+    { time: 90, value: 1.35 },
+    { time: 180, value: 1.7 },
   ],
 };
+
+/** 小 Boss 模板（每 30 秒轮换），相对普通怪大幅强化 */
+export const MINI_BOSS_POOL = ['hellhound', 'demonMage', 'fallenKnight', 'ghoul'];
 
 export default ENEMY_DATA;

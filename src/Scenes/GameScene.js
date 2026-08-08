@@ -23,6 +23,7 @@ import BulletSystem from '../Bullet/BulletSystem.js';
 import SkillSystem from '../Skill/SkillSystem.js';
 import SummonSystem from '../Skill/SummonSystem.js';
 import UpgradeManager from '../Skill/UpgradeManager.js';
+import SkillManager from '../Skill/Active/SkillManager.js';
 import EffectSystem from '../FX/EffectSystem.js';
 
 import Joystick from '../UI/Joystick.js';
@@ -55,6 +56,17 @@ export class GameScene {
     );
     this.upgradeManager = new UpgradeManager(this.skillSystem, this.player);
 
+    // 主动技能（配置驱动；具体技能实现后续模块注册）
+    this.activeSkills = new SkillManager({
+      player: this.player,
+      enemySystem: this.enemySystem,
+      bulletSystem: this.bulletSystem,
+      collision: this.collision,
+      effects: this.effects,
+      events: this.events,
+      camera: this.camera,
+    });
+
     // UI
     this.joystick = new Joystick();
     this.hud = new HUD();
@@ -86,6 +98,10 @@ export class GameScene {
     });
 
     this.events.on('bossSpawn', () => {
+      this.bossBar.triggerBanner();
+    });
+
+    this.events.on('miniBossSpawn', () => {
       this.bossBar.triggerBanner();
     });
 
@@ -139,15 +155,18 @@ export class GameScene {
     this.bulletSystem.clear();
     this.summonSystem.clear();
     this.skillSystem.clear();
+    this.activeSkills.clear();
     this.effects.clear();
     this.upgradeManager.reset();
     this.upgradeManager.setSkillPool(this.player.classData.skillPool || []);
     this.joystick.reset();
 
-    // 职业初始技能
+    // 职业初始被动技能（自动释放池）
     for (const id of this.player.classData.startSkills) {
       this.skillSystem.acquire(id);
     }
+    // 职业主动技能（小技能 + 大招）
+    this.activeSkills.bindClass(this._classId);
 
     this.camera.snapTo(this.player.x, this.player.y);
   }
@@ -192,8 +211,7 @@ export class GameScene {
     this.gameTime += dt;
     this._updateWorld(dt, false);
 
-    // 时间到（未击杀 Boss 也按胜利结算——已封印裂隙的时限内存活）
-    // Boss 在第 5 分钟出现，玩家需击杀 Boss 才真正胜利；此处不强制结束。
+    // 最终 Boss 在 matchDuration（3 分钟）出现；击杀后胜利结算，不因倒计时归零强制结束。
   }
 
   _updateWorld(dt, freezeSpawns) {
@@ -214,10 +232,11 @@ export class GameScene {
     // 重建碰撞四叉树（供技能与子弹查询）
     this.collision.rebuild(p, this.enemySystem.enemies);
 
-    // 技能（含普通攻击）
+    // 技能（含普通攻击）+ 主动技能 CD / 持续效果
     if (!freezeSpawns) {
       this.skillSystem.update(dt, this.camera);
       this.summonSystem.update(dt);
+      this.activeSkills.update(dt);
     }
 
     // 子弹

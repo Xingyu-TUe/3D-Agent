@@ -12,9 +12,19 @@ import ObjectPool from '../Utils/ObjectPool.js';
 import Enemy from './Enemy.js';
 import BossController from './Boss.js';
 import { drawEnemy } from './EnemyRenderer.js';
-import ENEMY_DATA, { ELITE_MODIFIER, DIFFICULTY_SCALE } from '../Data/enemies.js';
+import ENEMY_DATA, { ELITE_MODIFIER, DIFFICULTY_SCALE, MINI_BOSS_POOL } from '../Data/enemies.js';
 import GameConfig from '../Config/GameConfig.js';
 import { sampleCurve, randRange, dist2, TWO_PI } from '../Utils/MathUtils.js';
+
+/** 小 Boss 相对精英的额外强化 */
+const MINI_BOSS_MOD = {
+  hpMul: ELITE_MODIFIER.hpMul * 2.2,
+  damageMul: ELITE_MODIFIER.damageMul * 1.35,
+  radiusMul: ELITE_MODIFIER.radiusMul * 1.15,
+  speedMul: ELITE_MODIFIER.speedMul,
+  expMul: ELITE_MODIFIER.expMul * 2,
+  tint: '#ff6b4a',
+};
 
 export class EnemySystem {
   constructor(player, events, effects) {
@@ -26,12 +36,14 @@ export class EnemySystem {
 
     this.spawnTimer = 0;
     this.eliteTimer = GameConfig.spawn.eliteInterval;
+    this.miniBossTimer = GameConfig.spawn.miniBossInterval || 30;
     this.elapsed = 0;
+    this._miniBossIndex = 0;
 
     // 普通怪刷怪池（按 minTime 解锁）
     this._normalPool = Object.values(ENEMY_DATA).filter((d) => d.tier === 'normal');
 
-    this.boss = null;       // 当前 Boss 敌人引用
+    this.boss = null;       // 最终 Boss 引用
     this.bossSpawned = false;
 
     // Boss 技能回调 API
@@ -100,6 +112,7 @@ export class EnemySystem {
     return e;
   }
 
+  /** 最终 Boss（一局仅一次） */
   spawnBoss() {
     if (this.bossSpawned) return;
     this.bossSpawned = true;
@@ -108,7 +121,25 @@ export class EnemySystem {
     const e = this.spawnOne(data, pos.x, pos.y, false);
     e.boss = new BossController(e, data);
     this.boss = e;
-    this.events.emit('bossSpawn', { enemy: e });
+    this.events.emit('bossSpawn', { enemy: e, final: true });
+  }
+
+  /** 小 Boss：每隔 miniBossInterval 出现 */
+  spawnMiniBoss() {
+    const ids = MINI_BOSS_POOL || ['hellhound'];
+    const id = ids[this._miniBossIndex % ids.length];
+    this._miniBossIndex++;
+    const base = ENEMY_DATA[id] || ENEMY_DATA.hellhound;
+    const pos = this._spawnPositionRing();
+    const e = this.pool.acquire();
+    e.spawn(base, pos.x, pos.y, this._difficulty(), true, MINI_BOSS_MOD);
+    e.isMiniBoss = true;
+    e.name = (base.name || id) + '·霸主';
+    this.enemies.push(e);
+    this.events.emit('miniBossSpawn', { enemy: e });
+    this.effects.telegraph(e.x, e.y, e.radius * 2.2, '#ff6b4a', 0.8);
+    this.events.emit('shake', { magnitude: 6, duration: 0.25 });
+    return e;
   }
 
   _bossSummon(x, y, count, enemyId) {
@@ -130,19 +161,28 @@ export class EnemySystem {
   update(dt, camera) {
     this.elapsed += dt;
 
-    // Boss 出现
+    // 最终 Boss
     if (!this.bossSpawned && this.elapsed >= GameConfig.spawn.bossTime) {
       this.spawnBoss();
     }
 
-    // 刷怪（Boss 出现后减缓普通刷怪，但仍保持压力）
+    // 刷怪
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
       this.spawnTimer = GameConfig.spawn.interval;
       this._doSpawnWave();
     }
 
-    // 精英
+    // 小 Boss：每 30 秒一只，最终 Boss 出现后停止
+    if (!this.bossSpawned) {
+      this.miniBossTimer -= dt;
+      if (this.miniBossTimer <= 0) {
+        this.miniBossTimer = GameConfig.spawn.miniBossInterval || 30;
+        this.spawnMiniBoss();
+      }
+    }
+
+    // 精英（与小 Boss 并存，频率较低）
     if (!this.bossSpawned) {
       this.eliteTimer -= dt;
       if (this.eliteTimer <= 0) {
@@ -296,6 +336,8 @@ export class EnemySystem {
     this.elapsed = 0;
     this.spawnTimer = 0;
     this.eliteTimer = GameConfig.spawn.eliteInterval;
+    this.miniBossTimer = GameConfig.spawn.miniBossInterval || 30;
+    this._miniBossIndex = 0;
   }
 }
 

@@ -29,6 +29,7 @@ export class Enemy {
 
     this.isBoss = false;
     this.isElite = false;
+    this.isMiniBoss = false;
 
     // 攻击节流
     this.attackCd = 0;
@@ -70,6 +71,7 @@ export class Enemy {
     this.tier = data.tier;
     this.isBoss = data.tier === 'boss';
     this.isElite = !!elite;
+    this.isMiniBoss = false;
 
     let hp = data.hp * (scale ? scale.hp : 1);
     let dmg = data.damage * (scale ? scale.damage : 1);

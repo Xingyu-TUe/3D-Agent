@@ -5,8 +5,8 @@
  */
 
 export const GameConfig = {
-  // 一局时长（秒），5 分钟
-  matchDuration: 300,
+  // 一局时长（秒），默认 3 分钟
+  matchDuration: 180,
 
   // 设计分辨率（逻辑坐标）。渲染层会按屏幕做等比缩放适配。
   design: {
@@ -41,15 +41,15 @@ export const GameConfig = {
   },
 
   spawn: {
-    // 刷怪曲线：第 1 分钟约 80 只，第 5 分钟约 1000 只同时在场
-    // 通过时间插值目标存活数量（value = 目标存活数）
+    // 刷怪曲线（压缩到 3 分钟局）
     curve: [
-      { time: 0, value: 30 },
-      { time: 60, value: 80 },
-      { time: 120, value: 220 },
-      { time: 180, value: 450 },
-      { time: 240, value: 720 },
-      { time: 300, value: 1000 },
+      { time: 0, value: 40 },
+      { time: 30, value: 90 },
+      { time: 60, value: 180 },
+      { time: 90, value: 320 },
+      { time: 120, value: 500 },
+      { time: 150, value: 700 },
+      { time: 180, value: 900 },
     ],
     // 允许的最大同屏怪物（性能上限）
     maxAlive: 1200,
@@ -62,9 +62,10 @@ export const GameConfig = {
     ringMax: 720,
     // 精英出现间隔（秒）
     eliteInterval: 35,
-    // Boss 出现时间（秒）
-    bossTime: 300,
-    // 若想更快看到 Boss（调试），可改此值
+    // 小 Boss：每隔半分钟一只（最终 Boss 出现后停止）
+    miniBossInterval: 30,
+    // 最终 Boss 出现时间（秒）= 3 分钟
+    bossTime: 180,
   },
 
   exp: {
