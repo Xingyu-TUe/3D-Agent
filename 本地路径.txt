@@ -4,7 +4,7 @@
 
 | 项 | 值 |
 |----|----|
-| **本机仓库根** | `D:\3D-Agent` |
+| **本机仓库根** | `D:\RIFT` |
 | GitHub | https://github.com/Xingyu-TUe/3D-Agent |
 | 分支 | `cursor/hell-rift-wechat-game-b0ee` |
 | 同步脚本 | `同步到本机.bat` |
@@ -18,21 +18,21 @@
 同步到本机.bat
 ```
 
-会自动 `git pull` 到 `D:\3D-Agent` 并打包微信目录。
+会自动 `git pull` 到 `D:\RIFT` 并打包微信目录。
 
 ## 关键子路径
 
 ```text
-D:\3D-Agent\src\                  ← 源码
-D:\3D-Agent\src\Game.js           ← 主逻辑
-D:\3D-Agent\src\Assets\           ← 素材源
-D:\3D-Agent\dist\wechat\          ← 微信导入目录
-D:\3D-Agent\game.js               ← 微信单文件入口
+D:\RIFT\src\                  ← 源码
+D:\RIFT\src\Game.js           ← 主逻辑
+D:\RIFT\src\Assets\           ← 素材源
+D:\RIFT\dist\wechat\          ← 微信导入目录
+D:\RIFT\game.js               ← 微信单文件入口
 ```
 
 ## 启动
 
 ```bat
-cd /d D:\3D-Agent
+cd /d D:\RIFT
 npm run dev
 ```

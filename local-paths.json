@@ -2,9 +2,9 @@
   "project": "Hell Rift / 地狱裂隙",
   "repo": "https://github.com/Xingyu-TUe/3D-Agent",
   "branch": "cursor/hell-rift-wechat-game-b0ee",
-  "note": "本机固定目录为 D:/3D-Agent。云端 Agent 无法直接写入该盘符；每次推送后请在本机运行 同步到本机.bat 拉取。",
-  "root": "D:/3D-Agent",
-  "absoluteRoot": "D:/3D-Agent",
+  "note": "本机固定目录为 D:/RIFT。云端 Agent 无法直接写入该盘符；每次推送后请在本机运行 同步到本机.bat 拉取。",
+  "root": "D:/RIFT",
+  "absoluteRoot": "D:/RIFT",
   "cloudWorkspace": "/workspace",
   "repoUrl": "https://github.com/Xingyu-TUe/3D-Agent",
   "syncScript": "同步到本机.bat",
@@ -58,8 +58,8 @@
     ]
   },
   "localSetup": {
-    "clone": "git clone -b cursor/hell-rift-wechat-game-b0ee https://github.com/Xingyu-TUe/3D-Agent.git D:\\3D-Agent",
-    "enter": "cd /d D:\\3D-Agent",
+    "clone": "git clone -b cursor/hell-rift-wechat-game-b0ee https://github.com/Xingyu-TUe/3D-Agent.git D:\\RIFT",
+    "enter": "cd /d D:\\RIFT",
     "install": "npm install",
     "dev": "npm run dev",
     "sync": "双击 同步到本机.bat"

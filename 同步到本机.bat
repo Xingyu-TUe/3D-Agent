@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 setlocal
-set "TARGET=D:\3D-Agent"
+set "TARGET=D:\RIFT"
 set "REPO=https://github.com/Xingyu-TUe/3D-Agent.git"
 set "BRANCH=cursor/hell-rift-wechat-game-b0ee"
 
