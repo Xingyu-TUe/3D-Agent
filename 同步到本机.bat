@@ -62,9 +62,28 @@ popd
 
 echo.
 echo [完成] 本地路径: %TARGET%
-echo 用 Cursor / VS Code 打开该文件夹即可继续开发。
-echo H5 调试: 在该目录执行 npm run dev
-echo 微信导入: %TARGET%\dist\wechat\
+git -C "%TARGET%" log -1 --oneline
 echo.
-explorer "%TARGET%"
+if exist "%TARGET%\dist\wechat\game.js" (
+  for %%A in ("%TARGET%\dist\wechat\game.js") do (
+    echo 微信包 game.js: %%~zA 字节  修改时间 %%~tA
+  )
+  findstr /C:"SkillButtons" "%TARGET%\dist\wechat\game.js" >nul
+  if errorlevel 1 (
+    echo [警告] 微信包似乎仍是旧版，请检查构建日志
+  ) else (
+    echo [OK] 已包含主动技能按钮（SkillButtons）
+  )
+)
+echo.
+echo ========================================
+echo 下一步（很重要）：
+echo   用微信开发者工具打开：
+echo     %TARGET%\dist\wechat\
+echo   不要打开仓库根目录，也不要打开旧的 D:\3D-Agent
+echo   打开后点「编译」；若仍是旧版：清缓存 ^> 全部清除 再编译
+echo ========================================
+echo.
+explorer "%TARGET%\dist\wechat"
 pause
+
