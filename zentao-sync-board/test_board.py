@@ -139,6 +139,13 @@ class BoardHttpTests(unittest.TestCase):
         service.CONFIG_PATH = self.old
         self.tmp.cleanup()
 
+    def test_cached_poll_stays_responsive(self):
+        first = json.load(urllib.request.urlopen(self.base + "/api/board?executionId=588", timeout=3))
+        second = json.load(urllib.request.urlopen(self.base + "/api/board?executionId=588", timeout=3))
+        status = json.load(urllib.request.urlopen(self.base + "/api/status", timeout=3))
+        self.assertEqual(second["totals"]["total"]["count"], first["totals"]["total"]["count"])
+        self.assertEqual(status["mode"], "demo")
+
     def test_demo_board_and_page(self):
         page = urllib.request.urlopen(self.base + "/").read().decode("utf-8")
         self.assertIn('id="chart"', page)

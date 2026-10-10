@@ -20,7 +20,7 @@ class BoardApp:
     def __init__(self, client_factory=ZenTaoClient, now=None):
         self.client_factory = client_factory
         self.now = now or time.time
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.client = None
         self.base_url = DEFAULT_BASE_URL
         self.account = ""
@@ -88,8 +88,8 @@ class BoardApp:
             client = self.client
             cached = self.cache.get(execution_id)
             fresh = cached and not force and (self.now() - cached["at"] < CACHE_TTL_SECONDS)
-            if fresh:
-                return self._payload_from_cache(execution_id, cached, stale=False)
+        if fresh:
+            return self._payload_from_cache(execution_id, cached, stale=False)
 
         if client is None:
             snapshot = self._demo_snapshot(execution_id)
