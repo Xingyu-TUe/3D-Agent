@@ -414,11 +414,24 @@
       }
     }
 
-    function axisMax(value) {
-      const safe = Math.max(value, 1);
-      if (safe <= 4) return Math.ceil(safe);
-      const mag = 10 ** Math.floor(Math.log10(safe));
-      return [1, 2, 2.5, 5, 10].map((step) => step * mag).find((tick) => tick >= safe) || safe;
+    function axisSpec(value, integer) {
+      const safe = Math.max(Number(value) || 0, 1);
+      if (integer) {
+        const raw = Math.ceil(safe);
+        const step = raw <= 6 ? 1 : Math.ceil(raw / 4);
+        const top = Math.ceil(raw / step) * step;
+        const ticks = [];
+        for (let tick = 0; tick <= top; tick += step) ticks.push(tick);
+        return { top, ticks };
+      }
+      const rough = safe / 4;
+      const mag = 10 ** Math.floor(Math.log10(rough));
+      const err = rough / mag;
+      const step = (err <= 1 ? 1 : err <= 2 ? 2 : err <= 2.5 ? 2.5 : err <= 5 ? 5 : 10) * mag;
+      const top = Math.ceil(safe / step) * step;
+      const ticks = [];
+      for (let tick = 0; tick <= top + step / 1000; tick += step) ticks.push(Math.round(tick * 10) / 10);
+      return { top, ticks };
     }
 
     function renderChart() {
@@ -431,7 +444,8 @@
         els.chart.innerHTML = `<p class="meta" style="padding:24px">这个迭代还没有可统计的任务。</p>`;
         return;
       }
-      const max = axisMax(Math.max(...rows.map((row) => row.total[metric])));
+      const axis = axisSpec(Math.max(...rows.map((row) => row.total[metric])), metric === "count");
+      const max = axis.top;
       const width = Math.max(680, rows.length * 92 + 72);
       const height = 320;
       const pad = { top: 28, right: 16, bottom: 54, left: 44 };
@@ -439,12 +453,10 @@
       const innerW = width - pad.left - pad.right;
       const slot = innerW / rows.length;
       const barW = Math.min(36, slot * 0.52);
-      const ticks = 4;
       let grid = "";
-      for (let i = 0; i <= ticks; i += 1) {
-        const value = (max / ticks) * i;
+      for (const value of axis.ticks) {
         const y = pad.top + innerH - (value / max) * innerH;
-        const label = metric === "count" ? String(Math.round(value)) : fmtHours(value).replace("h", "");
+        const label = String(value);
         grid += `<line x1="${pad.left}" y1="${y}" x2="${width - pad.right}" y2="${y}" stroke="rgba(20,32,40,.08)"></line>`;
         grid += `<text x="${pad.left - 8}" y="${y + 4}" text-anchor="end" fill="#6b8494" font-size="11">${label}</text>`;
       }
