@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>迭代同步看板 · 原型</title>
+  <title>迭代同步看板</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=IBM+Plex+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
       --ink: #142028;
@@ -27,12 +27,10 @@
       --danger: #b54a3a;
       --shadow: 0 18px 50px rgba(20, 32, 40, 0.08);
       --radius: 18px;
-      --font: "IBM Plex Sans SC", "DM Sans", sans-serif;
+      --font: "IBM Plex Sans SC", "PingFang SC", "Microsoft YaHei", "DM Sans", sans-serif;
       --mono: "DM Sans", ui-monospace, monospace;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       min-height: 100vh;
       font-family: var(--font);
@@ -42,670 +40,134 @@
         radial-gradient(900px 500px at 90% 0%, rgba(31, 111, 139, 0.14), transparent 50%),
         linear-gradient(180deg, #eef5f4 0%, #f8f6f1 42%, #eef2f5 100%);
     }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.35;
-      background-image:
-        linear-gradient(rgba(20, 32, 40, 0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(20, 32, 40, 0.035) 1px, transparent 1px);
-      background-size: 48px 48px;
-      mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
-    }
-
-    .app {
-      position: relative;
-      width: min(1280px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 28px 0 48px;
-    }
-
-    .prototype-banner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 18px;
-      padding: 12px 16px;
-      border: 1px dashed rgba(14, 124, 107, 0.35);
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.55);
-      color: var(--ink-soft);
-      font-size: 13px;
-      animation: fade-down 0.55s ease both;
-    }
-
-    .prototype-banner strong { color: var(--accent-deep); }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 1.4fr 0.8fr;
-      gap: 20px;
-      margin-bottom: 22px;
-      animation: fade-down 0.65s ease both;
-    }
-
-    .brand-block {
-      padding: 28px 30px;
-      border-radius: calc(var(--radius) + 4px);
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(236, 247, 245, 0.88)),
-        linear-gradient(120deg, #0e7c6b, #1f6f8b);
-      background-blend-mode: normal;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255, 255, 255, 0.7);
-      overflow: hidden;
-      position: relative;
-    }
-
-    .brand-block::after {
-      content: "";
-      position: absolute;
-      right: -40px;
-      top: -50px;
-      width: 240px;
-      height: 240px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(14, 124, 107, 0.18), transparent 68%);
-    }
-
-    .brand-mark {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .brand-mark__logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(145deg, var(--accent), #1f6f8b);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
-      position: relative;
-    }
-
-    .brand-mark__logo::before,
-    .brand-mark__logo::after {
-      content: "";
-      position: absolute;
-      background: rgba(255,255,255,0.9);
-      border-radius: 2px;
-    }
-
-    .brand-mark__logo::before {
-      left: 9px; top: 10px; width: 8px; height: 16px;
-    }
-
-    .brand-mark__logo::after {
-      left: 19px; top: 10px; width: 8px; height: 10px;
-      opacity: 0.7;
-    }
-
-    .brand-mark__name {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1;
-    }
-
-    .brand-block h1 {
-      font-size: clamp(28px, 4vw, 40px);
-      line-height: 1.15;
-      letter-spacing: -0.03em;
-      margin-bottom: 10px;
-      max-width: 14ch;
-    }
-
-    .brand-block p {
-      color: var(--ink-soft);
-      font-size: 15px;
-      max-width: 42ch;
-      line-height: 1.55;
-    }
-
-    .sync-panel {
-      padding: 22px 22px 18px;
-      border-radius: calc(var(--radius) + 4px);
-      background: var(--panel);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.8);
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 18px;
-    }
-
-    .live-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .live-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--accent-deep);
-    }
-
-    .live-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--live);
-      box-shadow: 0 0 0 0 rgba(24, 160, 106, 0.55);
-      animation: pulse 1.8s ease infinite;
-    }
-
-    .live-dot.is-paused {
-      background: var(--muted);
-      animation: none;
-      box-shadow: none;
-    }
-
-    .meta {
-      color: var(--muted);
-      font-size: 12px;
-      font-family: var(--mono);
-    }
-
-    .sync-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    button, .select-wrap select {
-      font: inherit;
-    }
-
-    .btn {
-      border: 1px solid var(--line);
-      background: #fff;
-      color: var(--ink);
-      border-radius: 999px;
-      padding: 8px 14px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
-    }
-
-    .btn:hover { transform: translateY(-1px); border-color: rgba(14,124,107,0.35); }
-    .btn:active { transform: translateY(0); }
-
-    .btn-primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-
-    .btn-primary:hover { background: var(--accent-deep); }
-
-    .controls {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr auto;
-      gap: 12px;
-      margin-bottom: 18px;
-      animation: fade-down 0.75s ease both;
-    }
-
-    .field {
-      padding: 14px 16px;
-      border-radius: 16px;
+    .app { width: min(1280px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 48px; }
+    .hero { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 20px; margin-bottom: 16px; }
+    .brand-block, .sync-panel, .field, .stat, .board, .chart-card, .feed, .connect, .note {
       background: var(--panel);
       border: 1px solid rgba(255,255,255,0.85);
       box-shadow: var(--shadow);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
     }
-
-    .field label {
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 600;
-      letter-spacing: 0.02em;
-    }
-
-    .select-wrap {
-      position: relative;
-    }
-
-    .select-wrap select {
-      width: 100%;
-      appearance: none;
-      border: 0;
-      background: transparent;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--ink);
-      outline: none;
-      padding-right: 24px;
-      cursor: pointer;
-    }
-
-    .select-wrap::after {
-      content: "";
-      position: absolute;
-      right: 4px;
-      top: 50%;
-      width: 8px;
-      height: 8px;
-      border-right: 2px solid var(--muted);
-      border-bottom: 2px solid var(--muted);
-      transform: translateY(-70%) rotate(45deg);
-      pointer-events: none;
-    }
-
-    .view-toggle {
-      display: inline-flex;
-      padding: 4px;
-      border-radius: 999px;
-      background: rgba(20, 32, 40, 0.05);
-      gap: 4px;
-      align-self: end;
-      height: fit-content;
-    }
-
-    .view-toggle button {
-      border: 0;
-      background: transparent;
-      padding: 10px 16px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--ink-soft);
-      cursor: pointer;
-    }
-
-    .view-toggle button.is-active {
-      background: #fff;
-      color: var(--ink);
-      box-shadow: 0 4px 14px rgba(20,32,40,0.08);
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 18px;
-      animation: fade-down 0.85s ease both;
-    }
-
-    .stat {
-      padding: 18px 18px 16px;
-      border-radius: 16px;
-      background: var(--panel);
-      border: 1px solid rgba(255,255,255,0.85);
-      box-shadow: var(--shadow);
-      min-height: 108px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: transform 0.2s ease;
-    }
-
-    .stat:hover { transform: translateY(-2px); }
-
-    .stat__label {
-      font-size: 13px;
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .stat__value {
-      font-size: 30px;
-      font-weight: 700;
-      letter-spacing: -0.04em;
-      line-height: 1;
-    }
-
-    .stat__sub {
-      font-size: 12px;
-      color: var(--ink-soft);
-      margin-top: 8px;
-    }
-
+    .brand-block, .sync-panel { border-radius: 22px; padding: 26px 28px; }
+    .brand-block h1 { font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.03em; line-height: 1.15; margin: 10px 0; }
+    .lede { color: var(--ink-soft); max-width: 46ch; line-height: 1.6; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--accent-deep); }
+    .mark { width: 14px; height: 18px; border-radius: 3px; background: linear-gradient(180deg, var(--accent), #1f6f8b); display: inline-block; }
+    .sync-panel { display: flex; flex-direction: column; justify-content: space-between; gap: 16px; }
+    .live-row, .sync-actions, .toolbar, .chart-head, .board__head, .lane__head, .task__meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .live-badge { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: var(--accent-deep); }
+    .live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 0 rgba(24,160,106,.5); animation: pulse 1.8s ease infinite; }
+    .live-dot.is-paused, .live-dot.is-demo { animation: none; box-shadow: none; }
+    .live-dot.is-paused { background: var(--muted); }
+    .live-dot.is-demo { background: #c4a574; }
+    .meta { color: var(--muted); font-size: 12px; font-family: var(--mono); }
+    button, select, input { font: inherit; }
+    .btn { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn:hover { border-color: rgba(14,124,107,.4); }
+    .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn-primary:disabled { opacity: .6; cursor: wait; }
+    .connect { border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; display: grid; grid-template-columns: 1.3fr .7fr .7fr auto; gap: 10px; align-items: end; }
+    .connect label, .field label { display: block; font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+    .connect input, .select-wrap select { width: 100%; border: 0; background: transparent; font-size: 15px; font-weight: 600; color: var(--ink); outline: none; }
+    .connect input { background: rgba(255,255,255,.75); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+    .connect-actions { display: flex; gap: 8px; }
+    .banner { grid-column: 1 / -1; font-size: 13px; color: var(--ink-soft); }
+    .banner.error { color: var(--danger); }
+    .controls { display: grid; grid-template-columns: 1.3fr .9fr auto; gap: 12px; margin-bottom: 16px; }
+    .field { border-radius: 16px; padding: 14px 16px; }
+    .select-wrap { position: relative; }
+    .select-wrap select { appearance: none; cursor: pointer; padding-right: 18px; }
+    .select-wrap::after { content: ""; position: absolute; right: 4px; top: 50%; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+    .view-toggle { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(20,32,40,.05); gap: 4px; align-self: end; height: fit-content; }
+    .view-toggle button { border: 0; background: transparent; padding: 10px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--ink-soft); cursor: pointer; }
+    .view-toggle button.is-active { background: #fff; color: var(--ink); box-shadow: 0 4px 14px rgba(20,32,40,.08); }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stat { border-radius: 16px; padding: 16px 18px; min-height: 104px; }
+    .stat__label { font-size: 13px; color: var(--muted); font-weight: 700; }
+    .stat__value { font-size: 30px; font-weight: 700; letter-spacing: -.04em; line-height: 1.1; margin-top: 10px; }
+    .stat__sub { margin-top: 8px; font-size: 12px; color: var(--ink-soft); }
     .stat[data-tone="wait"] .stat__value { color: var(--wait); }
     .stat[data-tone="doing"] .stat__value { color: var(--doing); }
     .stat[data-tone="done"] .stat__value { color: var(--done); }
     .stat[data-tone="all"] .stat__value { color: var(--accent-deep); }
-
-    .board {
-      border-radius: calc(var(--radius) + 2px);
-      background: rgba(255,255,255,0.72);
-      border: 1px solid rgba(255,255,255,0.9);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      animation: fade-up 0.8s ease both;
-    }
-
-    .board__head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(247, 250, 251, 0.85);
-    }
-
-    .board__head h2 {
-      font-size: 18px;
-      letter-spacing: -0.02em;
-    }
-
-    .board__hint {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
+    .chart-card, .board, .feed, .note { border-radius: 20px; margin-bottom: 16px; overflow: hidden; }
+    .chart-head, .board__head { padding: 16px 18px; border-bottom: 1px solid var(--line); background: rgba(247,250,251,.85); }
+    .chart-head h2, .board__head h2 { font-size: 18px; letter-spacing: -.02em; }
+    .chart-head p, .board__hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .legend { display: flex; gap: 14px; align-items: center; color: var(--ink-soft); font-size: 12px; font-weight: 700; }
+    .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 4px; }
+    .swatch.wait { background: var(--wait); }
+    .swatch.doing { background: var(--doing); }
+    .swatch.done { background: var(--done); }
+    #chart { padding: 8px 8px 16px; overflow-x: auto; }
+    #chart svg { display: block; min-width: 640px; }
+    #chart text { font-family: var(--font); }
+    #chart .bar-hit { cursor: pointer; }
+    #chart .bar-hit.is-selected rect { stroke: var(--accent-deep); stroke-width: 2; }
     .table-wrap { overflow-x: auto; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 860px;
-    }
-
-    th, td {
-      padding: 16px 18px;
-      text-align: left;
-      border-bottom: 1px solid var(--line);
-      vertical-align: middle;
-    }
-
-    th {
-      font-size: 12px;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 700;
-      background: rgba(248, 250, 251, 0.9);
-      position: sticky;
-      top: 0;
-    }
-
-    tbody tr {
-      transition: background 0.2s ease;
-    }
-
-    tbody tr:hover { background: rgba(14, 124, 107, 0.04); }
-    tbody tr.is-flash { background: rgba(24, 160, 106, 0.1); }
-
-    .person {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      font-size: 13px;
-      font-weight: 700;
-      color: #fff;
-      flex-shrink: 0;
-    }
-
-    .person__name { font-weight: 700; font-size: 15px; }
-    .person__role { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-    .metric {
-      display: inline-flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: 88px;
-      padding: 10px 12px;
-      border-radius: 12px;
-    }
-
-    .metric__count {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1;
-    }
-
-    .metric__hours {
-      font-size: 12px;
-      color: var(--ink-soft);
-      font-family: var(--mono);
-    }
-
+    table { width: 100%; border-collapse: collapse; min-width: 860px; }
+    th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    th { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); background: rgba(248,250,251,.9); }
+    tbody tr.is-selected { background: rgba(14,124,107,.06); }
+    .person { display: flex; align-items: center; gap: 12px; }
+    .avatar { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-weight: 700; }
+    .person__name { font-weight: 700; }
+    .person__role { color: var(--muted); font-size: 12px; }
+    .metric { display: inline-flex; flex-direction: column; gap: 4px; min-width: 84px; padding: 10px 12px; border-radius: 12px; }
+    .metric__count { font-size: 22px; font-weight: 700; line-height: 1; }
+    .metric__hours { font-size: 12px; font-family: var(--mono); }
     .metric.wait { background: var(--wait-bg); color: var(--wait); }
     .metric.doing { background: var(--doing-bg); color: var(--doing); }
     .metric.done { background: var(--done-bg); color: var(--done); }
-
-    .progress {
-      width: min(180px, 100%);
-      height: 8px;
-      border-radius: 999px;
-      background: rgba(20,32,40,0.08);
-      overflow: hidden;
-    }
-
-    .progress > span {
-      display: block;
-      height: 100%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, var(--doing), var(--accent));
-      transition: width 0.45s ease;
-    }
-
-    .progress-label {
-      margin-top: 6px;
-      font-size: 12px;
-      color: var(--muted);
-      font-family: var(--mono);
-    }
-
-    .detail-grid {
-      display: none;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      padding: 18px;
-    }
-
+    .progress { width: min(160px, 100%); height: 8px; border-radius: 999px; background: rgba(20,32,40,.08); overflow: hidden; }
+    .progress > span { display: block; height: 100%; background: linear-gradient(90deg, var(--doing), var(--accent)); }
+    .progress-label { margin-top: 6px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+    .detail-grid { display: none; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 14px; }
     .detail-grid.is-visible { display: grid; }
     .summary-view.is-hidden { display: none; }
-
-    .lane {
-      border-radius: 16px;
-      background: var(--panel-solid);
-      border: 1px solid var(--line);
-      min-height: 320px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .lane__head {
-      padding: 14px 14px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
-
-    .lane__title {
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .lane__count {
-      font-size: 12px;
-      font-weight: 700;
-      padding: 4px 8px;
-      border-radius: 999px;
-      background: rgba(20,32,40,0.06);
-      color: var(--ink-soft);
-    }
-
+    .lane { background: var(--panel-solid); border: 1px solid var(--line); border-radius: 16px; min-height: 240px; }
+    .lane__head { padding: 12px 12px 8px; }
+    .lane__title { font-weight: 700; }
     .lane[data-status="wait"] .lane__title { color: var(--wait); }
     .lane[data-status="doing"] .lane__title { color: var(--doing); }
     .lane[data-status="done"] .lane__title { color: var(--done); }
-
-    .lane__body {
-      padding: 0 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex: 1;
-    }
-
-    .task {
-      padding: 12px;
-      border-radius: 12px;
-      background: #fff;
-      border: 1px solid rgba(20,32,40,0.08);
-      animation: pop-in 0.35s ease both;
-    }
-
-    .task__title {
-      font-size: 13px;
-      font-weight: 600;
-      line-height: 1.4;
-      margin-bottom: 8px;
-    }
-
-    .task__meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: 11px;
-      color: var(--muted);
-      font-family: var(--mono);
-    }
-
-    .feed {
-      margin-top: 18px;
-      padding: 16px 18px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.65);
-      border: 1px solid rgba(255,255,255,0.85);
-      box-shadow: var(--shadow);
-      animation: fade-up 0.95s ease both;
-    }
-
-    .feed__title {
-      font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-
-    .feed__list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 140px;
-      overflow: auto;
-    }
-
-    .feed__list li {
-      font-size: 13px;
-      color: var(--ink-soft);
-      display: grid;
-      grid-template-columns: 72px 1fr;
-      gap: 10px;
-    }
-
-    .feed__list time {
-      color: var(--muted);
-      font-family: var(--mono);
-      font-size: 12px;
-    }
-
-    .confirm-panel {
-      margin-top: 18px;
-      padding: 18px 20px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, rgba(14,124,107,0.08), rgba(31,111,139,0.08));
-      border: 1px solid rgba(14,124,107,0.18);
-    }
-
-    .confirm-panel h3 {
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
-
-    .confirm-panel ul {
-      padding-left: 18px;
-      color: var(--ink-soft);
-      font-size: 13px;
-      line-height: 1.7;
-    }
-
+    .lane__count { font-size: 12px; font-weight: 700; color: var(--ink-soft); background: rgba(20,32,40,.06); border-radius: 999px; padding: 4px 8px; }
+    .lane__body { padding: 0 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .task { background: #fff; border: 1px solid rgba(20,32,40,.08); border-radius: 12px; padding: 12px; }
+    .task__title { font-size: 13px; font-weight: 650; line-height: 1.4; margin-bottom: 8px; }
+    .task__meta { color: var(--muted); font-size: 11px; font-family: var(--mono); }
+    .feed, .note { padding: 16px 18px; }
+    .feed h2, .note h2 { font-size: 15px; margin-bottom: 8px; }
+    .feed ul { list-style: none; display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow: auto; }
+    .feed li { display: grid; grid-template-columns: 72px 1fr; gap: 10px; color: var(--ink-soft); font-size: 13px; }
+    .note p, .note li { color: var(--ink-soft); font-size: 13px; line-height: 1.7; }
+    .note ul { padding-left: 18px; }
+    .hidden { display: none !important; }
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(24,160,106,0.5); }
       70% { box-shadow: 0 0 0 10px rgba(24,160,106,0); }
-      100% { box-shadow: 0 0 0 0 rgba(24,160,106,0); }
     }
-
-    @keyframes fade-down {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fade-up {
-      from { opacity: 0; transform: translateY(14px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes pop-in {
-      from { opacity: 0; transform: scale(0.97); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
     @media (max-width: 960px) {
-      .hero, .controls, .stats, .detail-grid {
-        grid-template-columns: 1fr;
-      }
-      .view-toggle { width: 100%; justify-content: stretch; }
+      .hero, .controls, .stats, .connect, .detail-grid { grid-template-columns: 1fr; }
+      .view-toggle { width: 100%; }
       .view-toggle button { flex: 1; }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="prototype-banner">
-      <span><strong>原型预览</strong> · 数据为模拟，用于确认交互与指标口径；确认后再对接禅道 API / 实时同步。</span>
-      <span class="meta">来源参考：execution #588 taskKanban</span>
-    </div>
-
     <header class="hero">
       <div class="brand-block">
-        <div class="brand-mark">
-          <div class="brand-mark__logo" aria-hidden="true"></div>
-          <div class="brand-mark__name">迭代同步看板</div>
-        </div>
-        <h1>一眼看清每人进度与工时</h1>
-        <p>按迭代查看开发人员「未开始 / 进行中 / 已完成」的任务数与预估工时，支持实时同步刷新。</p>
+        <div class="eyebrow"><span class="mark"></span> 迭代同步看板</div>
+        <h1>每人完成、进行中、未开始，一眼可比</h1>
+        <p class="lede">按迭代汇总开发人员的任务数量和预计工时，并用柱状图对比任务量。连接禅道后按约 8 秒刷新。</p>
       </div>
-
       <aside class="sync-panel">
         <div>
           <div class="live-row">
-            <div class="live-badge">
-              <span class="live-dot" id="liveDot"></span>
-              <span id="liveText">实时同步中</span>
-            </div>
-            <span class="meta" id="syncIntervalLabel">每 8 秒</span>
+            <div class="live-badge"><span class="live-dot is-demo" id="liveDot"></span><span id="liveText">正在加载</span></div>
+            <span class="meta" id="pollLabel">约 8 秒</span>
           </div>
-          <p class="meta" style="margin-top:10px" id="lastSync">上次同步：--</p>
-          <p class="meta" style="margin-top:4px" id="sourceLabel">数据源：模拟推送（原型）</p>
+          <p class="meta" id="lastSync" style="margin-top:10px">上次同步：--</p>
+          <p class="meta" id="sourceLabel" style="margin-top:4px">数据源：--</p>
         </div>
         <div class="sync-actions">
           <button class="btn btn-primary" id="syncNowBtn" type="button">立即同步</button>
@@ -714,22 +176,38 @@
       </aside>
     </header>
 
+    <form class="connect" id="connectForm">
+      <div>
+        <label for="baseUrl">禅道地址</label>
+        <input id="baseUrl" name="baseUrl" value="https://zentao.designorder.cn" autocomplete="url" />
+      </div>
+      <div>
+        <label for="account">账号</label>
+        <input id="account" name="account" autocomplete="username" />
+      </div>
+      <div>
+        <label for="password">密码</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" />
+      </div>
+      <div class="connect-actions">
+        <button class="btn btn-primary" id="connectBtn" type="submit">连接禅道</button>
+        <button class="btn hidden" id="disconnectBtn" type="button">断开</button>
+      </div>
+      <p class="banner" id="connectBanner">未连接时使用演示数据。账号只保存在本机服务进程，不会写进页面仓库。</p>
+    </form>
+
     <section class="controls">
       <div class="field">
         <label for="iterationSelect">迭代（执行）</label>
-        <div class="select-wrap">
-          <select id="iterationSelect"></select>
-        </div>
+        <div class="select-wrap"><select id="iterationSelect"></select></div>
       </div>
       <div class="field">
-        <label for="memberFilter">人员筛选</label>
+        <label for="memberFilter">人员筛选（只影响列表）</label>
         <div class="select-wrap">
-          <select id="memberFilter">
-            <option value="all">全部开发人员</option>
-          </select>
+          <select id="memberFilter"><option value="all">全部开发人员</option></select>
         </div>
       </div>
-      <div class="view-toggle" role="tablist" aria-label="视图切换">
+      <div class="view-toggle" id="viewToggle">
         <button type="button" class="is-active" data-view="summary">人员汇总</button>
         <button type="button" data-view="detail">任务明细</button>
       </div>
@@ -737,15 +215,35 @@
 
     <section class="stats" id="stats"></section>
 
+    <section class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h2>各开发任务量</h2>
+          <p id="chartHint">堆叠柱从下到上为未开始、进行中、已完成。点击柱子可筛选下方列表。</p>
+        </div>
+        <div>
+          <div class="legend" aria-hidden="true">
+            <span><i class="swatch wait"></i>未开始</span>
+            <span><i class="swatch doing"></i>进行中</span>
+            <span><i class="swatch done"></i>已完成</span>
+          </div>
+          <div class="view-toggle" id="metricToggle" style="margin-top:10px">
+            <button type="button" class="is-active" data-metric="count">任务数</button>
+            <button type="button" data-metric="estimate">预估工时</button>
+          </div>
+        </div>
+      </div>
+      <div id="chart"></div>
+    </section>
+
     <section class="board">
       <div class="board__head">
         <div>
           <h2 id="boardTitle">人员进度汇总</h2>
-          <p class="board__hint" id="boardHint">单元格同时展示任务数量与预估工时（小时）</p>
+          <p class="board__hint" id="boardHint">单元格为任务数和预计工时</p>
         </div>
         <div class="meta" id="iterationMeta"></div>
       </div>
-
       <div class="summary-view" id="summaryView">
         <div class="table-wrap">
           <table>
@@ -756,418 +254,438 @@
                 <th>进行中</th>
                 <th>已完成</th>
                 <th>完成率</th>
-                <th>合计工时</th>
+                <th>预计合计</th>
               </tr>
             </thead>
             <tbody id="summaryBody"></tbody>
           </table>
         </div>
       </div>
-
       <div class="detail-grid" id="detailView"></div>
     </section>
 
     <section class="feed">
-      <div class="feed__title">同步动态</div>
-      <ul class="feed__list" id="feedList"></ul>
+      <h2>同步动态</h2>
+      <ul id="feedList"></ul>
     </section>
 
-    <section class="confirm-panel">
-      <h3>请确认后再进入正式开发</h3>
+    <section class="note">
+      <h2>统计口径</h2>
       <ul>
-        <li>指标口径：未开始 / 进行中 / 已完成，是否按禅道任务状态映射？是否需要「暂停」「关闭」等额外状态？</li>
-        <li>工时口径：展示预估工时、消耗工时，还是剩余工时？是否同时展示多项？</li>
-        <li>实时同步：轮询间隔（如 5/10/30 秒）或 WebSocket？是否需要多人同时打开同一页面联动？</li>
-        <li>权限与范围：是否只读看板？是否需要按项目/产品切换，而不只是当前执行 #588？</li>
-        <li>展示形态：以「人员汇总表」为主，还是也要保留禅道式任务看板明细？</li>
+        <li>未开始 = wait；进行中 = doing，已暂停（pause）一并计入进行中。</li>
+        <li>已完成 = done，已关闭（closed）计入已完成，并归到完成人，而不是「Closed」账号。</li>
+        <li>已取消不计入柱状图和合计。父任务不与子任务重复计算。</li>
+        <li>工时默认是禅道预计工时（estimate）。柱状图可切换为预估工时对比。</li>
       </ul>
     </section>
   </div>
-
   <script>
-    const PALETTE = ["#0e7c6b", "#1f6f8b", "#8a7356", "#2f6b4f", "#4d6a8a", "#a05a3c"];
-
-    const ITERATIONS = [
-      {
-        id: "588",
-        name: "迭代 588 · 订单中台联调",
-        start: "2026-09-22",
-        end: "2026-10-10",
-      },
-      {
-        id: "601",
-        name: "迭代 601 · 履约可视化",
-        start: "2026-10-06",
-        end: "2026-10-20",
-      },
-      {
-        id: "572",
-        name: "迭代 572 · 报价引擎优化",
-        start: "2026-09-01",
-        end: "2026-09-18",
-      },
-    ];
-
-    const PEOPLE = [
-      { id: "chen", name: "陈宇", role: "前端" },
-      { id: "li", name: "李娜", role: "后端" },
-      { id: "wang", name: "王凯", role: "全栈" },
-      { id: "zhao", name: "赵敏", role: "前端" },
-      { id: "sun", name: "孙浩", role: "后端" },
-    ];
-
-    const TASK_POOL = {
-      "588": [
-        ["订单列表筛选重构", "chen", "done", 6],
-        ["看板状态色板", "chen", "doing", 4],
-        ["移动端适配", "chen", "wait", 8],
-        ["任务同步接口", "li", "done", 10],
-        ["工时聚合查询", "li", "doing", 6],
-        ["Webhook 签名校验", "li", "wait", 5],
-        ["执行切换缓存", "wang", "done", 4],
-        ["实时推送联调", "wang", "doing", 8],
-        ["失败重试策略", "wang", "wait", 3],
-        ["人员筛选组件", "zhao", "done", 3],
-        ["明细卡片交互", "zhao", "doing", 5],
-        ["空状态文案", "zhao", "wait", 2],
-        ["权限中间层", "sun", "done", 7],
-        ["审计日志落库", "sun", "doing", 6],
-        ["导出 CSV", "sun", "wait", 4],
-      ],
-      "601": [
-        ["履约地图底图", "chen", "doing", 8],
-        ["节点动画", "chen", "wait", 5],
-        ["轨迹回放 API", "li", "doing", 9],
-        ["异常告警规则", "li", "wait", 6],
-        ["大屏布局", "wang", "done", 7],
-        ["指标卡片", "wang", "doing", 4],
-        ["图例组件", "zhao", "wait", 3],
-        ["状态筛选", "zhao", "doing", 4],
-        ["消息队列消费", "sun", "done", 8],
-        ["延迟补偿任务", "sun", "wait", 5],
-      ],
-      "572": [
-        ["报价公式校验", "li", "done", 8],
-        ["缓存击穿修复", "li", "done", 5],
-        ["对比面板", "chen", "done", 6],
-        ["历史版本 diff", "chen", "done", 4],
-        ["批量重算", "wang", "done", 10],
-        ["灰度开关", "wang", "done", 3],
-        ["表单校验提示", "zhao", "done", 3],
-        ["单元测试补齐", "sun", "done", 7],
-      ],
-    };
-
+    const COLORS = ["#0e7c6b", "#1f6f8b", "#8a7356", "#2f6b4f", "#4d6a8a", "#a05a3c"];
     const state = {
-      iterationId: "588",
+      executionId: "588",
       memberId: "all",
       view: "summary",
+      metric: "count",
       syncing: true,
-      tasks: {},
-      feed: [],
+      pollSeconds: 8,
+      board: null,
+      status: null,
       timer: null,
+      loadSeq: 0,
     };
 
     const els = {
+      liveDot: document.getElementById("liveDot"),
+      liveText: document.getElementById("liveText"),
+      pollLabel: document.getElementById("pollLabel"),
+      lastSync: document.getElementById("lastSync"),
+      sourceLabel: document.getElementById("sourceLabel"),
+      syncNowBtn: document.getElementById("syncNowBtn"),
+      toggleSyncBtn: document.getElementById("toggleSyncBtn"),
+      connectForm: document.getElementById("connectForm"),
+      connectBtn: document.getElementById("connectBtn"),
+      disconnectBtn: document.getElementById("disconnectBtn"),
+      connectBanner: document.getElementById("connectBanner"),
+      baseUrl: document.getElementById("baseUrl"),
+      account: document.getElementById("account"),
+      password: document.getElementById("password"),
       iterationSelect: document.getElementById("iterationSelect"),
       memberFilter: document.getElementById("memberFilter"),
       stats: document.getElementById("stats"),
+      chart: document.getElementById("chart"),
+      chartHint: document.getElementById("chartHint"),
       summaryBody: document.getElementById("summaryBody"),
-      detailView: document.getElementById("detailView"),
       summaryView: document.getElementById("summaryView"),
+      detailView: document.getElementById("detailView"),
       boardTitle: document.getElementById("boardTitle"),
       boardHint: document.getElementById("boardHint"),
       iterationMeta: document.getElementById("iterationMeta"),
-      lastSync: document.getElementById("lastSync"),
-      liveDot: document.getElementById("liveDot"),
-      liveText: document.getElementById("liveText"),
-      toggleSyncBtn: document.getElementById("toggleSyncBtn"),
-      syncNowBtn: document.getElementById("syncNowBtn"),
       feedList: document.getElementById("feedList"),
     };
 
-    function cloneTasks() {
-      const next = {};
-      for (const [id, rows] of Object.entries(TASK_POOL)) {
-        next[id] = rows.map(([title, owner, status, hours], index) => ({
-          id: `${id}-${index}`,
-          title,
-          owner,
-          status,
-          hours,
-        }));
-      }
-      return next;
+    function esc(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+      }[ch]));
     }
 
-    function personById(id) {
-      return PEOPLE.find((p) => p.id === id);
+    function fmtHours(value) {
+      const num = Number(value) || 0;
+      return Number.isInteger(num) ? `${num}h` : `${num.toFixed(1)}h`;
     }
 
-    function initials(name) {
-      return name.slice(0, 1);
+    function fmtWhen(iso) {
+      if (!iso) return "--";
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return iso.replace("T", " ");
+      return date.toLocaleString("zh-CN", { hour12: false });
     }
 
-    function colorFor(id) {
-      const idx = PEOPLE.findIndex((p) => p.id === id);
-      return PALETTE[(idx + PALETTE.length) % PALETTE.length];
+    async function api(path, options) {
+      const response = await fetch(path, options);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "请求失败");
+      return data;
     }
 
-    function formatTime(date = new Date()) {
-      return date.toLocaleTimeString("zh-CN", { hour12: false });
+    function colorFor(account) {
+      let hash = 0;
+      for (const ch of String(account)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+      return COLORS[hash % COLORS.length];
     }
 
-    function pushFeed(text) {
-      state.feed.unshift({ time: formatTime(), text });
-      state.feed = state.feed.slice(0, 8);
-      renderFeed();
-    }
-
-    function currentTasks() {
-      return state.tasks[state.iterationId] || [];
+    function people() {
+      return (state.board && state.board.people) || [];
     }
 
     function filteredPeople() {
-      if (state.memberId === "all") return PEOPLE;
-      return PEOPLE.filter((p) => p.id === state.memberId);
+      if (state.memberId === "all") return people();
+      return people().filter((person) => person.account === state.memberId);
     }
 
-    function aggregate(personId) {
-      const tasks = currentTasks().filter((t) => t.owner === personId);
-      const bucket = {
-        wait: { count: 0, hours: 0 },
-        doing: { count: 0, hours: 0 },
-        done: { count: 0, hours: 0 },
-      };
-      for (const t of tasks) {
-        bucket[t.status].count += 1;
-        bucket[t.status].hours += t.hours;
+    function filteredTasks() {
+      const tasks = (state.board && state.board.tasks) || [];
+      if (state.memberId === "all") return tasks;
+      return tasks.filter((task) => task.ownerAccount === state.memberId);
+    }
+
+    function renderStatus() {
+      const status = state.status || {};
+      const live = status.mode === "live";
+      els.liveDot.classList.toggle("is-demo", !live);
+      els.liveDot.classList.toggle("is-paused", live && !state.syncing);
+      els.liveText.textContent = !live ? "演示数据" : state.syncing ? "实时同步中" : "同步已暂停";
+      els.pollLabel.textContent = `约 ${state.pollSeconds} 秒`;
+      els.sourceLabel.textContent = live
+        ? `数据源：${status.baseUrl} · ${status.account || "Token"}`
+        : "数据源：内置演示数据";
+      els.baseUrl.value = status.baseUrl || els.baseUrl.value;
+      if (status.account) els.account.value = status.account;
+      els.disconnectBtn.classList.toggle("hidden", !live);
+      els.connectBtn.textContent = live ? "重新连接" : "连接禅道";
+      if (!status.error) {
+        els.connectBanner.classList.remove("error");
+        els.connectBanner.textContent = live
+          ? "已连接禅道。密码保存在本机 .zentao.local.json，不会进入 git。"
+          : "未连接时使用演示数据。填写账号后同步禅道执行（默认 #588）及同项目迭代。";
       }
-      const totalCount = bucket.wait.count + bucket.doing.count + bucket.done.count;
-      const totalHours = bucket.wait.hours + bucket.doing.hours + bucket.done.hours;
-      const rate = totalCount ? Math.round((bucket.done.count / totalCount) * 100) : 0;
-      return { ...bucket, totalCount, totalHours, rate };
-    }
-
-    function renderControls() {
-      els.iterationSelect.innerHTML = ITERATIONS.map(
-        (it) => `<option value="${it.id}">${it.name}</option>`
-      ).join("");
-      els.iterationSelect.value = state.iterationId;
-
-      const memberOptions = ['<option value="all">全部开发人员</option>']
-        .concat(PEOPLE.map((p) => `<option value="${p.id}">${p.name} · ${p.role}</option>`))
-        .join("");
-      els.memberFilter.innerHTML = memberOptions;
-      els.memberFilter.value = state.memberId;
     }
 
     function renderStats() {
-      const people = filteredPeople();
-      const totals = { wait: { count: 0, hours: 0 }, doing: { count: 0, hours: 0 }, done: { count: 0, hours: 0 } };
-      for (const p of people) {
-        const a = aggregate(p.id);
-        for (const key of ["wait", "doing", "done"]) {
-          totals[key].count += a[key].count;
-          totals[key].hours += a[key].hours;
-        }
+      const totals = (state.board && state.board.totals) || null;
+      if (!totals) {
+        els.stats.innerHTML = "";
+        return;
       }
-      const allCount = totals.wait.count + totals.doing.count + totals.done.count;
-      const allHours = totals.wait.hours + totals.doing.hours + totals.done.hours;
+      const cards = [
+        ["未开始", totals.wait.count, `${fmtHours(totals.wait.estimate)} 预计`, "wait"],
+        ["进行中", totals.doing.count, `${fmtHours(totals.doing.estimate)} 预计`, "doing"],
+        ["已完成", totals.done.count, `${fmtHours(totals.done.estimate)} 预计`, "done"],
+        ["合计", totals.total.count, `${fmtHours(totals.total.estimate)} · ${totals.people} 人`, "all"],
+      ];
+      els.stats.innerHTML = cards.map(([label, value, sub, tone]) => `
+        <article class="stat" data-tone="${tone}">
+          <div class="stat__label">${label}</div>
+          <div class="stat__value">${value}</div>
+          <div class="stat__sub">${sub}</div>
+        </article>`).join("");
+      if (totals.other.count) {
+        els.stats.insertAdjacentHTML("beforeend", `<p class="meta" style="grid-column:1/-1">另有 ${totals.other.count} 项已取消或其他状态，未计入合计与柱状图。</p>`);
+      }
+    }
 
-      els.stats.innerHTML = [
-        ["未开始", totals.wait.count, `${totals.wait.hours}h 预估`, "wait"],
-        ["进行中", totals.doing.count, `${totals.doing.hours}h 预估`, "doing"],
-        ["已完成", totals.done.count, `${totals.done.hours}h 预估`, "done"],
-        ["合计", allCount, `${allHours}h · ${people.length} 人`, "all"],
-      ]
-        .map(
-          ([label, value, sub, tone]) => `
-          <article class="stat" data-tone="${tone}">
-            <div class="stat__label">${label}</div>
-            <div>
-              <div class="stat__value">${value}</div>
-              <div class="stat__sub">${sub}</div>
-            </div>
-          </article>`
-        )
-        .join("");
+    function axisMax(value) {
+      const safe = Math.max(value, 1);
+      if (safe <= 4) return Math.ceil(safe);
+      const mag = 10 ** Math.floor(Math.log10(safe));
+      return [1, 2, 2.5, 5, 10].map((step) => step * mag).find((tick) => tick >= safe) || safe;
+    }
+
+    function renderChart() {
+      const metric = state.metric;
+      const rows = [...people()].sort((a, b) => (b.total[metric] - a.total[metric]) || a.name.localeCompare(b.name, "zh"));
+      els.chartHint.textContent = metric === "count"
+        ? "当前按任务数比较。堆叠从下到上为未开始、进行中、已完成。点击柱子筛选列表。"
+        : "当前按预计工时比较。堆叠从下到上为未开始、进行中、已完成。点击柱子筛选列表。";
+      if (!rows.length) {
+        els.chart.innerHTML = `<p class="meta" style="padding:24px">这个迭代还没有可统计的任务。</p>`;
+        return;
+      }
+      const max = axisMax(Math.max(...rows.map((row) => row.total[metric])));
+      const width = Math.max(680, rows.length * 92 + 72);
+      const height = 320;
+      const pad = { top: 28, right: 16, bottom: 54, left: 44 };
+      const innerH = height - pad.top - pad.bottom;
+      const innerW = width - pad.left - pad.right;
+      const slot = innerW / rows.length;
+      const barW = Math.min(36, slot * 0.52);
+      const ticks = 4;
+      let grid = "";
+      for (let i = 0; i <= ticks; i += 1) {
+        const value = (max / ticks) * i;
+        const y = pad.top + innerH - (value / max) * innerH;
+        const label = metric === "count" ? String(Math.round(value)) : fmtHours(value).replace("h", "");
+        grid += `<line x1="${pad.left}" y1="${y}" x2="${width - pad.right}" y2="${y}" stroke="rgba(20,32,40,.08)"></line>`;
+        grid += `<text x="${pad.left - 8}" y="${y + 4}" text-anchor="end" fill="#6b8494" font-size="11">${label}</text>`;
+      }
+      const bars = rows.map((row, index) => {
+        const x = pad.left + index * slot + (slot - barW) / 2;
+        let cursor = pad.top + innerH;
+        const segments = ["wait", "doing", "done"].map((bucket) => {
+          const value = row[bucket][metric];
+          const h = max ? (value / max) * innerH : 0;
+          cursor -= h;
+          const fill = bucket === "wait" ? "#8a7356" : bucket === "doing" ? "#1f6f8b" : "#2f6b4f";
+          return `<rect x="${x}" y="${cursor}" width="${barW}" height="${Math.max(h, 0)}" fill="${fill}" rx="3"></rect>`;
+        }).join("");
+        const totalLabel = metric === "count" ? String(row.total.count) : fmtHours(row.total.estimate);
+        const barTop = pad.top + innerH - (row.total[metric] / max) * innerH;
+        const labelY = Math.max(14, barTop - 8);
+        const tip = `${row.name}：未开始 ${row.wait.count} 项/${fmtHours(row.wait.estimate)}，进行中 ${row.doing.count} 项/${fmtHours(row.doing.estimate)}，已完成 ${row.done.count} 项/${fmtHours(row.done.estimate)}`;
+        const selected = state.memberId === row.account ? "is-selected" : "";
+        return `
+          <g class="bar-hit ${selected}" data-account="${esc(row.account)}" tabindex="0" role="button">
+            <title>${esc(tip)}</title>
+            <rect x="${x - 8}" y="${pad.top}" width="${barW + 16}" height="${innerH}" fill="transparent"></rect>
+            ${segments}
+            <text x="${x + barW / 2}" y="${labelY}" text-anchor="middle" fill="#142028" font-size="12" font-weight="700">${esc(totalLabel)}</text>
+            <text x="${x + barW / 2}" y="${height - 22}" text-anchor="middle" fill="#142028" font-size="13" font-weight="700">${esc(row.name)}</text>
+          </g>`;
+      }).join("");
+      const unit = metric === "count" ? "任务数" : "预计工时";
+      els.chart.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="各开发${unit}堆叠柱状图">
+          ${grid}
+          ${bars}
+        </svg>`;
     }
 
     function renderSummary() {
-      const rows = filteredPeople().map((person) => {
-        const a = aggregate(person.id);
-        return `
-          <tr data-person="${person.id}">
-            <td>
-              <div class="person">
-                <div class="avatar" style="background:${colorFor(person.id)}">${initials(person.name)}</div>
-                <div>
-                  <div class="person__name">${person.name}</div>
-                  <div class="person__role">${person.role}</div>
-                </div>
+      const rows = filteredPeople();
+      els.summaryBody.innerHTML = rows.map((person) => `
+        <tr class="${state.memberId === person.account ? "is-selected" : ""}">
+          <td>
+            <div class="person">
+              <div class="avatar" style="background:${colorFor(person.account)}">${esc(person.name.slice(0, 1))}</div>
+              <div>
+                <div class="person__name">${esc(person.name)}</div>
+                <div class="person__role">${esc(person.account === "__unassigned__" ? "未指派" : person.account)}</div>
               </div>
-            </td>
-            <td><div class="metric wait"><span class="metric__count">${a.wait.count}</span><span class="metric__hours">${a.wait.hours}h</span></div></td>
-            <td><div class="metric doing"><span class="metric__count">${a.doing.count}</span><span class="metric__hours">${a.doing.hours}h</span></div></td>
-            <td><div class="metric done"><span class="metric__count">${a.done.count}</span><span class="metric__hours">${a.done.hours}h</span></div></td>
-            <td>
-              <div class="progress" aria-label="完成率 ${a.rate}%"><span style="width:${a.rate}%"></span></div>
-              <div class="progress-label">${a.rate}% · ${a.done.count}/${a.totalCount}</div>
-            </td>
-            <td><strong>${a.totalHours}h</strong></td>
-          </tr>`;
-      });
-      els.summaryBody.innerHTML = rows.join("") || `<tr><td colspan="6">当前筛选下暂无人员</td></tr>`;
+            </div>
+          </td>
+          <td><div class="metric wait"><span class="metric__count">${person.wait.count}</span><span class="metric__hours">${fmtHours(person.wait.estimate)}</span></div></td>
+          <td><div class="metric doing"><span class="metric__count">${person.doing.count}</span><span class="metric__hours">${fmtHours(person.doing.estimate)}</span></div></td>
+          <td><div class="metric done"><span class="metric__count">${person.done.count}</span><span class="metric__hours">${fmtHours(person.done.estimate)}</span></div></td>
+          <td>
+            <div class="progress"><span style="width:${person.rate}%"></span></div>
+            <div class="progress-label">${person.rate}% · ${person.done.count}/${person.total.count}</div>
+          </td>
+          <td><strong>${fmtHours(person.total.estimate)}</strong></td>
+        </tr>`).join("") || `<tr><td colspan="6">当前筛选下没有人员</td></tr>`;
     }
 
     function renderDetail() {
-      const statuses = [
-        ["wait", "未开始"],
-        ["doing", "进行中"],
-        ["done", "已完成"],
-      ];
-      const peopleIds = new Set(filteredPeople().map((p) => p.id));
-      const tasks = currentTasks().filter((t) => peopleIds.has(t.owner));
-
-      els.detailView.innerHTML = statuses
-        .map(([status, label]) => {
-          const list = tasks.filter((t) => t.status === status);
-          const hours = list.reduce((sum, t) => sum + t.hours, 0);
-          return `
-            <div class="lane" data-status="${status}">
-              <div class="lane__head">
-                <div class="lane__title">${label}</div>
-                <div class="lane__count">${list.length} 项 · ${hours}h</div>
-              </div>
-              <div class="lane__body">
-                ${list
-                  .map((t) => {
-                    const owner = personById(t.owner);
-                    return `
-                      <article class="task">
-                        <div class="task__title">${t.title}</div>
-                        <div class="task__meta">
-                          <span>${owner ? owner.name : t.owner}</span>
-                          <span>${t.hours}h</span>
-                        </div>
-                      </article>`;
-                  })
-                  .join("") || `<div class="task__meta" style="padding:8px">暂无任务</div>`}
-              </div>
-            </div>`;
-        })
-        .join("");
+      const lanes = [["wait", "未开始"], ["doing", "进行中"], ["done", "已完成"]];
+      const tasks = filteredTasks();
+      if (tasks.some((task) => task.bucket === "other")) lanes.push(["other", "未计入"]);
+      els.detailView.innerHTML = lanes.map(([bucket, label]) => {
+        const list = tasks.filter((task) => task.bucket === bucket);
+        const hours = list.reduce((sum, task) => sum + task.estimate, 0);
+        return `
+          <div class="lane" data-status="${bucket}">
+            <div class="lane__head">
+              <div class="lane__title">${label}</div>
+              <div class="lane__count">${list.length} 项 · ${fmtHours(hours)}</div>
+            </div>
+            <div class="lane__body">
+              ${list.map((task) => `
+                <article class="task">
+                  <div class="task__title">${esc(task.name)}</div>
+                  <div class="task__meta"><span>${esc(task.ownerName)} · ${esc(task.statusLabel)}</span><span>${fmtHours(task.estimate)}</span></div>
+                </article>`).join("") || `<div class="meta" style="padding:8px">暂无任务</div>`}
+            </div>
+          </div>`;
+      }).join("");
     }
 
     function renderBoardChrome() {
-      const it = ITERATIONS.find((x) => x.id === state.iterationId);
-      els.iterationMeta.textContent = it
-        ? `${it.start} → ${it.end} · 执行 #${it.id}`
+      const execution = state.board && state.board.execution;
+      els.iterationMeta.textContent = execution
+        ? `${execution.begin || "?"} → ${execution.end || "?"} · #${execution.id}`
         : "";
-      if (state.view === "summary") {
-        els.boardTitle.textContent = "人员进度汇总";
-        els.boardHint.textContent = "单元格同时展示任务数量与预估工时（小时）";
-        els.summaryView.classList.remove("is-hidden");
-        els.detailView.classList.remove("is-visible");
-      } else {
-        els.boardTitle.textContent = "任务明细看板";
-        els.boardHint.textContent = "按状态分列，便于核对汇总数字对应的任务";
-        els.summaryView.classList.add("is-hidden");
-        els.detailView.classList.add("is-visible");
+      const summary = state.view === "summary";
+      els.boardTitle.textContent = summary ? "人员进度汇总" : "任务明细";
+      els.boardHint.textContent = summary ? "单元格为任务数和预计工时" : "按状态分列，可对照柱状图";
+      els.summaryView.classList.toggle("is-hidden", !summary);
+      els.detailView.classList.toggle("is-visible", !summary);
+    }
+
+    function renderFilters() {
+      const executions = (state.board && state.board.executions) || [];
+      els.iterationSelect.innerHTML = executions.map((item) => `<option value="${esc(item.id)}">${esc(item.name)}</option>`).join("");
+      if ([...els.iterationSelect.options].some((option) => option.value === state.executionId)) {
+        els.iterationSelect.value = state.executionId;
       }
+      const options = [`<option value="all">全部开发人员</option>`]
+        .concat(people().map((person) => `<option value="${esc(person.account)}">${esc(person.name)}</option>`));
+      els.memberFilter.innerHTML = options.join("");
+      if (![...els.memberFilter.options].some((option) => option.value === state.memberId)) state.memberId = "all";
+      els.memberFilter.value = state.memberId;
     }
 
     function renderFeed() {
-      els.feedList.innerHTML = state.feed
-        .map((item) => `<li><time>${item.time}</time><span>${item.text}</span></li>`)
-        .join("");
+      const changes = (state.board && state.board.changes) || [];
+      els.feedList.innerHTML = changes.length
+        ? changes.map((item) => `<li><time>${esc(item.time)}</time><span>${esc(item.text)}</span></li>`).join("")
+        : `<li><time>--</time><span>${state.board && state.board.mode === "live" ? "已同步，暂无新的状态变化" : "连接禅道后，这里会显示任务状态变化"}</span></li>`;
     }
 
-    function renderAll() {
+    function render() {
+      els.lastSync.textContent = `上次同步：${fmtWhen(state.board && state.board.syncedAt)}`;
+      renderStatus();
+      if (state.board && state.board.error) {
+        els.connectBanner.classList.add("error");
+        els.connectBanner.textContent = state.board.error;
+      }
+      renderFilters();
       renderStats();
+      renderChart();
       renderBoardChrome();
       renderSummary();
       renderDetail();
+      renderFeed();
     }
 
-    function flashPerson(personId) {
-      const row = document.querySelector(`tr[data-person="${personId}"]`);
-      if (!row) return;
-      row.classList.add("is-flash");
-      setTimeout(() => row.classList.remove("is-flash"), 900);
-    }
-
-    function simulateSync({ manual = false } = {}) {
-      const tasks = currentTasks();
-      if (!tasks.length) return;
-
-      const movable = tasks.filter((t) => t.status !== "done");
-      if (movable.length) {
-        const target = movable[Math.floor(Math.random() * movable.length)];
-        const before = target.status;
-        target.status = before === "wait" ? "doing" : "done";
-        const owner = personById(target.owner);
-        pushFeed(
-          `${manual ? "手动同步" : "自动同步"}：${owner.name} 的「${target.title}」${
-            before === "wait" ? "未开始 → 进行中" : "进行中 → 已完成"
-          }`
-        );
-        renderAll();
-        flashPerson(target.owner);
-      } else {
-        pushFeed(`${manual ? "手动同步" : "自动同步"}：当前迭代暂无状态变更`);
+    async function loadBoard(force) {
+      const seq = ++state.loadSeq;
+      const executionId = state.executionId;
+      try {
+        const board = await api(`/api/board?executionId=${encodeURIComponent(executionId)}&force=${force ? "1" : "0"}`);
+        if (seq !== state.loadSeq) return;
+        state.board = board;
+        if (board.execution && board.execution.id) state.executionId = String(board.execution.id);
+        render();
+      } catch (error) {
+        if (seq !== state.loadSeq) return;
+        els.connectBanner.classList.add("error");
+        els.connectBanner.textContent = error.message;
       }
-
-      els.lastSync.textContent = `上次同步：${formatTime()}`;
     }
 
     function setSyncing(on) {
       state.syncing = on;
-      els.liveDot.classList.toggle("is-paused", !on);
-      els.liveText.textContent = on ? "实时同步中" : "同步已暂停";
       els.toggleSyncBtn.textContent = on ? "暂停同步" : "恢复同步";
-      if (state.timer) {
-        clearInterval(state.timer);
-        state.timer = null;
-      }
-      if (on) {
-        state.timer = setInterval(() => simulateSync(), 8000);
-      }
+      if (state.timer) clearInterval(state.timer);
+      state.timer = null;
+      if (on) state.timer = setInterval(() => loadBoard(false), state.pollSeconds * 1000);
+      renderStatus();
     }
 
-    function bindEvents() {
-      els.iterationSelect.addEventListener("change", (e) => {
-        state.iterationId = e.target.value;
-        pushFeed(`切换迭代：${ITERATIONS.find((x) => x.id === state.iterationId).name}`);
-        renderAll();
+    function bind() {
+      els.iterationSelect.addEventListener("change", () => {
+        state.executionId = els.iterationSelect.value;
+        state.memberId = "all";
+        loadBoard(true);
       });
-
-      els.memberFilter.addEventListener("change", (e) => {
-        state.memberId = e.target.value;
-        renderAll();
+      els.memberFilter.addEventListener("change", () => {
+        state.memberId = els.memberFilter.value;
+        renderChart();
+        renderSummary();
+        renderDetail();
       });
-
-      document.querySelectorAll(".view-toggle button").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          document.querySelectorAll(".view-toggle button").forEach((b) => b.classList.remove("is-active"));
-          btn.classList.add("is-active");
-          state.view = btn.dataset.view;
+      document.querySelectorAll("#viewToggle button").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("#viewToggle button").forEach((item) => item.classList.remove("is-active"));
+          button.classList.add("is-active");
+          state.view = button.dataset.view;
           renderBoardChrome();
         });
       });
-
-      els.syncNowBtn.addEventListener("click", () => simulateSync({ manual: true }));
+      document.querySelectorAll("#metricToggle button").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("#metricToggle button").forEach((item) => item.classList.remove("is-active"));
+          button.classList.add("is-active");
+          state.metric = button.dataset.metric;
+          renderChart();
+        });
+      });
+      els.chart.addEventListener("click", (event) => {
+        const group = event.target.closest("[data-account]");
+        if (!group) return;
+        state.memberId = state.memberId === group.dataset.account ? "all" : group.dataset.account;
+        els.memberFilter.value = state.memberId;
+        renderChart();
+        renderSummary();
+        renderDetail();
+      });
+      els.syncNowBtn.addEventListener("click", () => loadBoard(true));
       els.toggleSyncBtn.addEventListener("click", () => setSyncing(!state.syncing));
+      els.connectForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        els.connectBtn.disabled = true;
+        els.connectBanner.classList.remove("error");
+        els.connectBanner.textContent = "正在连接禅道…";
+        try {
+          state.status = await api("/api/connect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              baseUrl: els.baseUrl.value.trim(),
+              account: els.account.value.trim(),
+              password: els.password.value,
+            }),
+          });
+          els.password.value = "";
+          await loadBoard(true);
+        } catch (error) {
+          els.connectBanner.classList.add("error");
+          els.connectBanner.textContent = error.message;
+        } finally {
+          els.connectBtn.disabled = false;
+          renderStatus();
+        }
+      });
+      els.disconnectBtn.addEventListener("click", async () => {
+        state.status = await api("/api/disconnect", { method: "POST" });
+        state.memberId = "all";
+        await loadBoard(true);
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible" && state.syncing) loadBoard(false);
+      });
     }
 
-    function init() {
-      state.tasks = cloneTasks();
-      renderControls();
-      bindEvents();
-      pushFeed("原型已加载，正在使用模拟数据演示实时同步");
-      renderAll();
-      els.lastSync.textContent = `上次同步：${formatTime()}`;
+    async function init() {
+      bind();
+      try {
+        state.status = await api("/api/status");
+        state.pollSeconds = state.status.pollSeconds || 8;
+        state.executionId = String(state.status.defaultExecutionId || "588");
+      } catch (error) {
+        els.connectBanner.classList.add("error");
+        els.connectBanner.textContent = error.message;
+      }
+      await loadBoard(true);
       setSyncing(true);
     }
 
