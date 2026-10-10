@@ -72,7 +72,10 @@
     .connect-actions { display: flex; gap: 8px; }
     .banner { grid-column: 1 / -1; font-size: 13px; color: var(--ink-soft); }
     .banner.error { color: var(--danger); }
-    .controls { display: grid; grid-template-columns: 1.3fr .9fr auto; gap: 12px; margin-bottom: 16px; }
+    .controls { display: grid; grid-template-columns: 1.3fr .9fr auto; gap: 12px; margin-bottom: 12px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .chip { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .chip.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
     .field { border-radius: 16px; padding: 14px 16px; }
     .select-wrap { position: relative; }
     .select-wrap select { appearance: none; cursor: pointer; padding-right: 18px; }
@@ -196,6 +199,8 @@
       <p class="banner" id="connectBanner">未连接时使用演示数据。账号只保存在本机服务进程，不会写进页面仓库。</p>
     </form>
 
+    <div class="chips" id="iterationChips" aria-label="切换迭代"></div>
+
     <section class="controls">
       <div class="field">
         <label for="iterationSelect">迭代（执行）</label>
@@ -287,6 +292,7 @@
       view: "summary",
       metric: "count",
       syncing: true,
+      connectError: "",
       pollSeconds: 8,
       board: null,
       status: null,
@@ -344,7 +350,11 @@
     async function api(path, options) {
       const response = await fetch(path, options);
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "请求失败");
+      if (!response.ok) {
+        const error = new Error(data.error || "请求失败");
+        error.status = response.status;
+        throw error;
+      }
       return data;
     }
 
@@ -379,11 +389,14 @@
       els.sourceLabel.textContent = live
         ? `数据源：${status.baseUrl} · ${status.account || "Token"}`
         : "数据源：内置演示数据";
-      els.baseUrl.value = status.baseUrl || els.baseUrl.value;
-      if (status.account) els.account.value = status.account;
+      if (document.activeElement !== els.baseUrl && status.baseUrl) els.baseUrl.value = status.baseUrl;
+      if (document.activeElement !== els.account && status.account) els.account.value = status.account;
       els.disconnectBtn.classList.toggle("hidden", !live);
       els.connectBtn.textContent = live ? "重新连接" : "连接禅道";
-      if (!status.error) {
+      if (state.connectError) {
+        els.connectBanner.classList.add("error");
+        els.connectBanner.textContent = state.connectError;
+      } else if (!status.error) {
         els.connectBanner.classList.remove("error");
         els.connectBanner.textContent = live
           ? "已连接禅道。密码保存在本机 .zentao.local.json，不会进入 git。"
@@ -554,10 +567,18 @@
 
     function renderFilters() {
       const executions = (state.board && state.board.executions) || [];
-      els.iterationSelect.innerHTML = executions.map((item) => `<option value="${esc(item.id)}">${esc(item.name)}</option>`).join("");
+      const signature = executions.map((item) => `${item.id}:${item.name}`).join("|");
+      if (els.iterationSelect.dataset.signature !== signature) {
+        els.iterationSelect.dataset.signature = signature;
+        els.iterationSelect.innerHTML = executions.map((item) => `<option value="${esc(item.id)}">${esc(item.name)}</option>`).join("");
+      }
       if ([...els.iterationSelect.options].some((option) => option.value === state.executionId)) {
         els.iterationSelect.value = state.executionId;
       }
+      const chips = document.getElementById("iterationChips");
+      chips.innerHTML = executions.map((item) => `
+        <button type="button" class="chip ${item.id === state.executionId ? "is-active" : ""}" data-execution="${esc(item.id)}">${esc(item.name)}</button>
+      `).join("");
       const options = [`<option value="all">全部开发人员</option>`]
         .concat(people().map((person) => `<option value="${esc(person.account)}">${esc(person.name)}</option>`));
       els.memberFilter.innerHTML = options.join("");
@@ -614,10 +635,16 @@
     }
 
     function bind() {
-      els.iterationSelect.addEventListener("change", () => {
-        state.executionId = els.iterationSelect.value;
+      const chooseIteration = (executionId) => {
+        if (!executionId || executionId === state.executionId) return;
+        state.executionId = executionId;
         state.memberId = "all";
         loadBoard(true);
+      };
+      els.iterationSelect.addEventListener("change", () => chooseIteration(els.iterationSelect.value));
+      document.getElementById("iterationChips").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-execution]");
+        if (button) chooseIteration(button.dataset.execution);
       });
       els.memberFilter.addEventListener("change", () => {
         state.memberId = els.memberFilter.value;
@@ -655,8 +682,11 @@
       els.connectForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         els.connectBtn.disabled = true;
+        state.connectError = "";
         els.connectBanner.classList.remove("error");
         els.connectBanner.textContent = "正在连接禅道…";
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
         try {
           state.status = await api("/api/connect", {
             method: "POST",
@@ -666,13 +696,16 @@
               account: els.account.value.trim(),
               password: els.password.value,
             }),
+            signal: controller.signal,
           });
           els.password.value = "";
           await loadBoard(true);
         } catch (error) {
-          els.connectBanner.classList.add("error");
-          els.connectBanner.textContent = error.message;
+          state.connectError = error.name === "AbortError"
+            ? "连接超时。请确认禅道地址可访问，且 REST API 已开启。"
+            : (error.message || "连接失败");
         } finally {
+          clearTimeout(timer);
           els.connectBtn.disabled = false;
           renderStatus();
         }

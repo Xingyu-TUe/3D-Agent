@@ -142,6 +142,7 @@ class BoardHttpTests(unittest.TestCase):
     def test_demo_board_and_page(self):
         page = urllib.request.urlopen(self.base + "/").read().decode("utf-8")
         self.assertIn('id="chart"', page)
+        self.assertIn('id="iterationChips"', page)
         self.assertIn("各开发任务量", page)
 
         payload = json.load(urllib.request.urlopen(self.base + "/api/board?executionId=588"))
