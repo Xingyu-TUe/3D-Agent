@@ -1,5 +1,5 @@
 outputs/
-data/dataset/val/
+data/dataset/
 __pycache__/
 *.pyc
 .venv/
