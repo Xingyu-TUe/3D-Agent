@@ -16,6 +16,10 @@ DEFAULT_EXECUTION_ID = "588"
 CACHE_TTL_SECONDS = 8
 
 
+def _is_serverless():
+    return bool(os.environ.get("VERCEL")) or bool(os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+
 class BoardApp:
     def __init__(self, client_factory=ZenTaoClient, now=None):
         self.client_factory = client_factory
@@ -41,6 +45,10 @@ class BoardApp:
                 "defaultExecutionId": os.environ.get("ZENTAO_EXECUTION_ID", DEFAULT_EXECUTION_ID),
                 "pollSeconds": CACHE_TTL_SECONDS,
                 "error": self.last_error,
+                "hosting": "vercel" if os.environ.get("VERCEL") else "local",
+                "envConfigured": bool(
+                    os.environ.get("ZENTAO_ACCOUNT") or os.environ.get("ZENTAO_TOKEN")
+                ),
             }
 
     def connect(self, base_url, account, password, token=""):
@@ -66,7 +74,8 @@ class BoardApp:
             self.cache.clear()
             self.previous.clear()
             self.last_error = ""
-        self._save_config(base_url, account, password, token)
+        if not _is_serverless():
+            self._save_config(base_url, account, password, token)
         return self.status()
 
     def disconnect(self):
@@ -78,7 +87,7 @@ class BoardApp:
             self.previous.clear()
             self.feeds.clear()
             self.last_error = ""
-        if CONFIG_PATH.exists():
+        if not _is_serverless() and CONFIG_PATH.exists():
             CONFIG_PATH.unlink()
         return self.status()
 
@@ -225,7 +234,7 @@ class BoardApp:
         password = os.environ.get("ZENTAO_PASSWORD", "")
         token = os.environ.get("ZENTAO_TOKEN", "").strip()
         file_cfg = {}
-        if CONFIG_PATH.exists():
+        if not _is_serverless() and CONFIG_PATH.exists():
             try:
                 file_cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
@@ -247,6 +256,8 @@ class BoardApp:
                 self.client = None
 
     def _save_config(self, base_url, account, password, token):
+        if _is_serverless():
+            return
         payload = {"baseUrl": base_url, "account": account, "password": password, "token": token}
         CONFIG_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         try:

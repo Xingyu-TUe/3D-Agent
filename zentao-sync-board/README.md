@@ -56,3 +56,40 @@ python3 server.py --port 5173
 cd zentao-sync-board
 python3 -m unittest test_board.py
 ```
+
+## 部署到 Vercel
+
+看板已适配 Vercel：`public/` 静态页 + `api/*.py` Serverless 调用禅道。
+
+### 一键导入（推荐）
+
+1. 打开 [Vercel New Project](https://vercel.com/new)，导入 GitHub 仓库 `3D-Agent`（或你的 fork）。
+2. **Root Directory** 设为 `zentao-sync-board`。
+3. Framework Preset 选 **Other**（会使用仓库内 `vercel.json` 的 `npm run build`）。
+4. 在 **Environment Variables** 添加（Production / Preview 都建议勾选）：
+
+| 变量 | 说明 |
+| --- | --- |
+| `ZENTAO_BASE_URL` | 默认 `https://zentao.designorder.cn` |
+| `ZENTAO_ACCOUNT` | 禅道账号 |
+| `ZENTAO_PASSWORD` | 禅道密码 |
+| `ZENTAO_EXECUTION_ID` | 可选，默认 `588` |
+| `ZENTAO_INSECURE_SSL` | 可选，`1` 跳过 SSL 校验（一般不需要） |
+
+5. Deploy。部署完成后打开站点即可查看柱状图与迭代数据。
+
+未配置账号密码时，线上仍显示**演示数据**，便于先看 UI。
+
+### CLI 部署
+
+```bash
+cd zentao-sync-board
+npm install
+npx vercel login
+npx vercel link
+npx vercel env add ZENTAO_ACCOUNT
+npx vercel env add ZENTAO_PASSWORD
+npx vercel --prod
+```
+
+线上环境不会把页面里填写的密码写入磁盘；请用 Vercel 环境变量连接禅道。

@@ -1,0 +1,17 @@
+{
+  "name": "zentao-sync-board",
+  "version": "1.0.0",
+  "description": "按禅道迭代查看每位开发的任务数量和预计工时：未开始、进行中、已完成。页面包含堆叠柱状图，并按约 8 秒从禅道刷新。",
+  "main": "index.js",
+  "scripts": {
+    "build": "mkdir -p public && cp index.html public/index.html",
+    "start": "python3 server.py",
+    "test:py": "python3 -m unittest test_board.py"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vercel": "^39.1.0"
+  }
+}

@@ -1,0 +1,6 @@
+.zentao.local.json
+__pycache__/
+.pytest_cache/
+test_board.py
+server.py
+README.md

@@ -396,6 +396,13 @@
       if (state.connectError) {
         els.connectBanner.classList.add("error");
         els.connectBanner.textContent = state.connectError;
+      } else if (status.hosting === "vercel") {
+        els.connectBanner.classList.toggle("error", !status.envConfigured && !live);
+        els.connectBanner.textContent = status.envConfigured
+          ? (live
+            ? "Vercel 已通过环境变量连接禅道。"
+            : "已配置禅道环境变量；若仍显示演示数据，请检查账号权限或 REST API 是否开启。")
+          : "Vercel 线上版：在 Vercel 项目 Settings → Environment Variables 配置 ZENTAO_ACCOUNT、ZENTAO_PASSWORD（可选 ZENTAO_BASE_URL、ZENTAO_EXECUTION_ID）。未配置时使用演示数据。";
       } else if (!status.error) {
         els.connectBanner.classList.remove("error");
         els.connectBanner.textContent = live
