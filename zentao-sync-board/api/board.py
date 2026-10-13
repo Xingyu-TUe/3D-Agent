@@ -1,7 +1,7 @@
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
-from _runtime import ZenTaoError, board_app, respond
+from board_http import ZenTaoError, board_app, respond
 
 
 class handler(BaseHTTPRequestHandler):

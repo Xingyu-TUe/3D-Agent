@@ -12,6 +12,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "vercel": "^39.1.0"
+    "vercel": "^63.1.2"
   }
 }

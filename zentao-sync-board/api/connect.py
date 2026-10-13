@@ -1,6 +1,6 @@
 from http.server import BaseHTTPRequestHandler
 
-from _runtime import ZenTaoError, board_app, read_body, respond
+from board_http import ZenTaoError, board_app, read_body, respond
 
 
 class handler(BaseHTTPRequestHandler):

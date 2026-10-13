@@ -1,6 +1,6 @@
 from http.server import BaseHTTPRequestHandler
 
-from _runtime import board_app, respond
+from board_http import board_app, respond
 
 
 class handler(BaseHTTPRequestHandler):
