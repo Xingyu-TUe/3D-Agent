@@ -1,10 +1,11 @@
-"""单张或批量截图推理。"""
+"""单张或批量截图推理（CLI + 供 API 复用）。"""
 
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 import torch
 from PIL import Image
@@ -23,21 +24,31 @@ def load_checkpoint(ckpt_path: Path, device):
     return model, classes
 
 
-def predict_image(model, classes, image_path: Path, image_size: int, device):
-    tf = transforms.Compose(
+def _build_transform(image_size: int) -> transforms.Compose:
+    return transforms.Compose(
         [
             transforms.Resize((image_size, image_size)),
             transforms.ToTensor(),
             transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
         ]
     )
-    img = Image.open(image_path).convert("RGB")
+
+
+def predict_pil(
+    model,
+    classes: list[str],
+    image: Image.Image,
+    image_size: int,
+    device,
+    path: str | None = None,
+) -> dict[str, Any]:
+    tf = _build_transform(image_size)
+    img = image.convert("RGB")
     x = tf(img).unsqueeze(0).to(device)
     with torch.no_grad():
         probs = torch.softmax(model(x), dim=1)[0].cpu()
     idx = int(probs.argmax())
-    return {
-        "path": str(image_path),
+    result: dict[str, Any] = {
         "label": classes[idx],
         "confidence": float(probs[idx]),
         "top3": [
@@ -45,6 +56,14 @@ def predict_image(model, classes, image_path: Path, image_size: int, device):
             for i in probs.argsort(descending=True)[:3].tolist()
         ],
     }
+    if path is not None:
+        result["path"] = path
+    return result
+
+
+def predict_image(model, classes, image_path: Path, image_size: int, device):
+    img = Image.open(image_path).convert("RGB")
+    return predict_pil(model, classes, img, image_size, device, path=str(image_path))
 
 
 def main() -> None:

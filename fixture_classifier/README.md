@@ -89,8 +89,48 @@ auto_split_val: false
 - `outputs/run/classification_report.txt` — 精确率/召回/F1  
 - `outputs/run/confusion_matrix.json` — 混淆矩阵  
 
+## HTTP 推理接口（外部系统调用）
+
+训练得到 `best.pt` 后，可启动本地 API 服务供 CAD/工位/其它程序调用：
+
+```bash
+cd fixture_classifier/src
+python api_server.py --checkpoint ../outputs/run/best.pt --host 0.0.0.0 --port 8000
+```
+
+Windows 也可双击 `run_api.bat`（默认读 `outputs\run\best.pt`）。
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/health` | 健康检查 |
+| GET | `/classes` | 返回类别列表 |
+| POST | `/predict` | 单张：`multipart` 字段 `file` |
+| POST | `/predict/batch` | 多张：字段 `files` |
+| GET | `/docs` | Swagger 交互文档 |
+
+**curl 示例：**
+
+```bash
+curl -s http://127.0.0.1:8000/health
+curl -s -X POST -F "file=@截图.png" http://127.0.0.1:8000/predict
+```
+
+**Python 调用示例：**
+
+```python
+import requests
+r = requests.post(
+    "http://127.0.0.1:8000/predict",
+    files={"file": open("截图.png", "rb")},
+)
+print(r.json())  # {"label": "...", "confidence": 0.95, "top3": [...]}
+```
+
+局域网其它机器访问时，把 `127.0.0.1` 换成运行 API 的电脑 IP，并放行防火墙 8000 端口。
+
 ## 后续可扩展
 
 - 混合真实截图与轻度渲染增强  
-- 导出 ONNX 供 C#/C++ 工位调用  
-- 与 3D-Agent 截图批处理脚本联动，自动落盘到 `train/类别名/`
+- 导出 ONNX 供 C#/C++ 工位进程内调用（无需 HTTP）  
+- 与 3D-Agent 截图批处理脚本联动，自动落盘到 `train/类别名/`  
+- API 增加 Token 鉴权、限流
