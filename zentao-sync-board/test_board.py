@@ -70,6 +70,47 @@ class AggregateTests(unittest.TestCase):
         self.assertEqual(counts, sorted(counts, reverse=True))
         self.assertGreater(people[0]["total"]["count"], 0)
 
+    def test_team_task_without_assignee_is_not_unassigned(self):
+        raw = [
+            {
+                "id": 9,
+                "name": "多人联调",
+                "status": "doing",
+                "estimate": 10,
+                "parent": 0,
+                "assignedTo": "",
+                "mode": "multi",
+                "team": [
+                    {"account": "chen", "realname": "陈宇", "estimate": 6, "consumed": 1, "left": 5},
+                    {"account": "li", "realname": "李娜", "estimate": 4, "consumed": 0, "left": 4},
+                ],
+            }
+        ]
+        people, tasks = aggregate.aggregate_people(raw)
+        by_name = {row["name"]: row for row in people}
+        self.assertNotIn("未指派", by_name)
+        self.assertEqual(by_name["陈宇"]["doing"]["count"], 1)
+        self.assertEqual(by_name["陈宇"]["doing"]["estimate"], 6)
+        self.assertEqual(by_name["李娜"]["doing"]["estimate"], 4)
+        self.assertEqual(aggregate.unassigned_report(tasks), [])
+
+    def test_literal_wu_assignee_falls_back_to_finished_by(self):
+        raw = [
+            {
+                "id": 3,
+                "name": "已关单",
+                "status": "closed",
+                "estimate": 5,
+                "parent": 0,
+                "assignedTo": "无",
+                "finishedBy": {"account": "wang", "realname": "王凯"},
+            }
+        ]
+        people, tasks = aggregate.aggregate_people(raw)
+        self.assertEqual(people[0]["name"], "王凯")
+        self.assertEqual(tasks[0]["assignReason"], "finishedBy")
+        self.assertEqual(aggregate.unassigned_report(tasks), [])
+
 
 class TokenExtractTests(unittest.TestCase):
     def test_nested_and_cased_tokens(self):
@@ -201,12 +242,13 @@ class BoardHttpTests(unittest.TestCase):
         payload = json.load(urllib.request.urlopen(request))
         self.assertEqual(payload["mode"], "live")
         self.assertEqual(payload["people"][0]["name"], "周宁")
+        self.assertEqual(payload["people"][0]["wait"]["count"], 2)
+        self.assertEqual(payload["unassignedTasks"], [])
 
         payload = json.load(urllib.request.urlopen(self.base + "/api/board?executionId=588&force=1"))
         self.assertEqual(payload["mode"], "live")
         self.assertEqual(payload["execution"]["name"], "真实迭代 588")
         self.assertEqual(payload["people"][0]["name"], "周宁")
-        self.assertEqual(payload["people"][0]["wait"]["count"], 2)
         self.assertEqual(payload["totals"]["total"]["estimate"], 9)
 
         again = json.load(urllib.request.urlopen(self.base + "/api/board?executionId=588&force=1"))

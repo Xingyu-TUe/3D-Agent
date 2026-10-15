@@ -6,7 +6,7 @@ import threading
 import time
 from pathlib import Path
 
-from aggregate import aggregate_people, normalize_execution, summarize
+from aggregate import aggregate_people, normalize_execution, summarize, unassigned_report
 from demo_data import demo_executions, demo_tasks
 from zentao_client import ZenTaoClient, ZenTaoError
 
@@ -163,6 +163,7 @@ class BoardApp:
             "executions": snapshot["executions"],
             "people": people,
             "tasks": tasks,
+            "unassignedTasks": unassigned_report(tasks),
             "totals": summarize(people),
             "mode": "demo" if client is None else "live",
         }
@@ -257,6 +258,7 @@ class BoardApp:
             "executions": cached["executions"],
             "people": cached["people"],
             "tasks": cached["tasks"],
+            "unassignedTasks": cached.get("unassignedTasks") or unassigned_report(cached["tasks"]),
             "totals": cached["totals"],
             "changes": feed,
         }

@@ -269,6 +269,27 @@
       <div class="detail-grid" id="detailView"></div>
     </section>
 
+    <section class="feed hidden" id="unassignedPanel">
+      <h2>未指派任务明细 <span class="meta" id="unassignedMeta"></span></h2>
+      <p class="meta" style="margin-bottom:10px">以下任务在禅道里没有有效指派人（含 assignedTo 为空 / 无 / closed，且没有多人 team、完成人可回退）。点击姓名「未指派」或此处可对照。</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>任务</th>
+              <th>状态</th>
+              <th>预计</th>
+              <th>assignedTo 原始值</th>
+              <th>判定原因</th>
+              <th>team</th>
+            </tr>
+          </thead>
+          <tbody id="unassignedBody"></tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="feed">
       <h2>同步动态</h2>
       <ul id="feedList"></ul>
@@ -329,6 +350,9 @@
       boardHint: document.getElementById("boardHint"),
       iterationMeta: document.getElementById("iterationMeta"),
       feedList: document.getElementById("feedList"),
+      unassignedPanel: document.getElementById("unassignedPanel"),
+      unassignedMeta: document.getElementById("unassignedMeta"),
+      unassignedBody: document.getElementById("unassignedBody"),
     };
 
     function esc(value) {
@@ -641,6 +665,28 @@
         : `<li><time>--</time><span>${state.board && state.board.mode === "live" ? "已同步，暂无新的状态变化" : "连接禅道后，这里会显示任务状态变化"}</span></li>`;
     }
 
+    function renderUnassigned() {
+      const list = (state.board && state.board.unassignedTasks) || [];
+      if (!list.length) {
+        els.unassignedPanel.classList.add("hidden");
+        els.unassignedBody.innerHTML = "";
+        return;
+      }
+      els.unassignedPanel.classList.remove("hidden");
+      const hours = list.reduce((sum, task) => sum + (Number(task.estimate) || 0), 0);
+      els.unassignedMeta.textContent = `共 ${list.length} 项 · ${fmtHours(hours)}`;
+      els.unassignedBody.innerHTML = list.map((task) => `
+        <tr>
+          <td><a href="https://zentao.designorder.cn/task-view-${esc(task.id)}.html" target="_blank" rel="noopener">#${esc(task.id)}</a></td>
+          <td>${esc(task.name)}</td>
+          <td>${esc(task.statusLabel)} <span class="meta">(${esc(task.status)})</span></td>
+          <td>${fmtHours(task.estimate)}</td>
+          <td><code>${esc(task.assignedToRaw || "空")}</code></td>
+          <td>${esc(task.assignReason || "")}</td>
+          <td>${esc((task.teamAccounts || []).join(", ") || "—")}</td>
+        </tr>`).join("");
+    }
+
     function render() {
       els.lastSync.textContent = `上次同步：${fmtWhen(state.board && state.board.syncedAt)}`;
       renderStatus();
@@ -654,6 +700,7 @@
       renderBoardChrome();
       renderSummary();
       renderDetail();
+      renderUnassigned();
       renderFeed();
     }
 
