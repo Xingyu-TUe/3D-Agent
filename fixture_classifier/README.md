@@ -91,6 +91,8 @@ auto_split_val: false
 
 ## HTTP 推理接口（外部系统调用）
 
+完整字段、错误码与多语言调用示例见 **[API接口文档.md](./API接口文档.md)**。
+
 训练得到 `best.pt` 后，可启动本地 API 服务供 CAD/工位/其它程序调用：
 
 ```bash
