@@ -71,6 +71,24 @@ class AggregateTests(unittest.TestCase):
         self.assertGreater(people[0]["total"]["count"], 0)
 
 
+class TokenExtractTests(unittest.TestCase):
+    def test_nested_and_cased_tokens(self):
+        self.assertEqual(zentao_client.extract_token({"token": "a"}), "a")
+        self.assertEqual(zentao_client.extract_token({"Token": "b"}), "b")
+        self.assertEqual(zentao_client.extract_token({"data": {"token": "c"}}), "c")
+        self.assertEqual(zentao_client.extract_token({"result": {"Token": "d"}}), "d")
+        self.assertEqual(zentao_client.extract_token("e"), "e")
+
+    def test_login_accepts_nested_token_payload(self):
+        def request_fn(method, path, body, token):
+            if path.startswith("/api.php/v1/tokens"):
+                return {"data": {"token": "nested-tok"}}
+            return {}
+
+        client = zentao_client.ZenTaoClient("https://zentao.example", "dev", "secret", request_fn=request_fn)
+        self.assertEqual(client.login(), "nested-tok")
+
+
 class ClientTests(unittest.TestCase):
     def test_login_and_paged_tasks(self):
         calls = []
@@ -165,7 +183,24 @@ class BoardHttpTests(unittest.TestCase):
         request = urllib.request.Request(self.base + "/api/connect", data=body, headers={"Content-Type": "application/json"})
         status = json.load(urllib.request.urlopen(request))
         self.assertTrue(status["connected"])
+        self.assertEqual(status["token"], "tok")
         self.assertNotIn("password", status)
+
+    def test_board_accepts_token_header_without_prior_connect(self):
+        # Fresh app instance: no in-memory client, credentials come from headers.
+        request = urllib.request.Request(
+            self.base + "/api/board?executionId=588&force=1",
+            headers={
+                "X-Zentao-Base-Url": "https://zentao.example",
+                "X-Zentao-Account": "dev",
+                "X-Zentao-Password": "pw",
+            },
+        )
+        # Ensure disconnect first so memory client is cleared.
+        urllib.request.urlopen(urllib.request.Request(self.base + "/api/disconnect", data=b"{}", method="POST", headers={"Content-Type": "application/json"}))
+        payload = json.load(urllib.request.urlopen(request))
+        self.assertEqual(payload["mode"], "live")
+        self.assertEqual(payload["people"][0]["name"], "周宁")
 
         payload = json.load(urllib.request.urlopen(self.base + "/api/board?executionId=588&force=1"))
         self.assertEqual(payload["mode"], "live")

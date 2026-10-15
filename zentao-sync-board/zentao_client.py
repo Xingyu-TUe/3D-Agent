@@ -1,5 +1,6 @@
 """Minimal ZenTao REST v1 client (token auth, paged task/execution reads)."""
 
+import hashlib
 import json
 import ssl
 import urllib.error
@@ -26,17 +27,33 @@ class ZenTaoClient:
     def login(self):
         if not self.account or not self.password:
             raise ZenTaoError("缺少禅道账号或密码")
-        payload = self._request(
-            "POST",
-            "/api.php/v1/tokens",
-            {"account": self.account, "password": self.password},
-            auth=False,
-        )
-        token = payload.get("token") if isinstance(payload, dict) else None
-        if not token:
-            raise ZenTaoError("禅道未返回 Token，请确认账号密码以及 REST API 已开启")
-        self.token = token
-        return token
+        last_error = None
+        for password in _password_candidates(self.password):
+            try:
+                payload = self._request(
+                    "POST",
+                    "/api.php/v1/tokens",
+                    {"account": self.account, "password": password},
+                    auth=False,
+                )
+            except ZenTaoError as exc:
+                last_error = exc
+                # Wrong password is definitive; other formats unlikely to help.
+                if exc.status == 400 or "登录失败" in str(exc):
+                    raise
+                continue
+            token = extract_token(payload)
+            if token:
+                self.token = token
+                return token
+            last_error = ZenTaoError(
+                "禅道未返回 Token。响应："
+                + _short_payload(payload)
+                + "。请确认账号密码正确，且后台已开启 REST API（api.php）。"
+            )
+        if last_error:
+            raise last_error
+        raise ZenTaoError("禅道未返回 Token，请确认账号密码以及 REST API 已开启")
 
     def get_execution(self, execution_id):
         payload = self._request("GET", f"/api.php/v1/executions/{execution_id}")
@@ -115,6 +132,7 @@ class ZenTaoClient:
         try:
             with urllib.request.urlopen(request, timeout=self.timeout, context=self.ssl_context) as response:
                 raw = response.read()
+                content_type = response.headers.get("Content-Type", "")
         except urllib.error.HTTPError as exc:
             raw = exc.read()
             payload = _parse_json(raw)
@@ -122,6 +140,9 @@ class ZenTaoClient:
         except urllib.error.URLError as exc:
             raise ZenTaoError(f"无法连接禅道：{exc.reason}")
         payload = _parse_json(raw)
+        if not payload and raw:
+            snippet = raw[:120].decode("utf-8", errors="replace")
+            raise ZenTaoError(f"禅道返回了非 JSON 内容（{content_type}）：{snippet}")
         if isinstance(payload, dict) and payload.get("error"):
             raise ZenTaoError(str(payload.get("error")))
         return payload
@@ -135,12 +156,68 @@ class ZenTaoClient:
         return base + path
 
 
+def extract_token(payload):
+    if isinstance(payload, str) and payload.strip():
+        return payload.strip()
+    if not isinstance(payload, dict):
+        return ""
+    for key in ("token", "Token", "accessToken", "access_token"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+        if isinstance(value, dict):
+            nested = extract_token(value)
+            if nested:
+                return nested
+    data = payload.get("data")
+    if isinstance(data, (dict, str)):
+        nested = extract_token(data)
+        if nested:
+            return nested
+    result = payload.get("result")
+    if isinstance(result, (dict, str)):
+        nested = extract_token(result)
+        if nested:
+            return nested
+    return ""
+
+
+def _password_candidates(password):
+    plain = password or ""
+    candidates = [plain]
+    # Some ZenTao installs expect an MD5 password for the REST token API.
+    if plain and not _looks_like_md5(plain):
+        candidates.append(hashlib.md5(plain.encode("utf-8")).hexdigest())
+    return candidates
+
+
+def _looks_like_md5(value):
+    if len(value) != 32:
+        return False
+    return all(ch in "0123456789abcdefABCDEF" for ch in value)
+
+
 def _parse_json(raw):
     if not raw:
         return {}
     try:
-        return json.loads(raw.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return {}
+    text = text.strip()
+    if not text:
+        return {}
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Some ZenTao installs wrap JSON in HTML comments or prepend junk.
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            try:
+                return json.loads(text[start : end + 1])
+            except json.JSONDecodeError:
+                return {}
         return {}
 
 
@@ -152,3 +229,11 @@ def _error_message(payload):
         if value:
             return str(value)
     return ""
+
+
+def _short_payload(payload):
+    try:
+        text = json.dumps(payload, ensure_ascii=False)
+    except TypeError:
+        text = str(payload)
+    return text[:180]

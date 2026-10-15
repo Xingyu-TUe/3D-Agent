@@ -13,6 +13,7 @@ class handler(BaseHTTPRequestHandler):
                     body.get("baseUrl", ""),
                     body.get("account", ""),
                     body.get("password", ""),
+                    token=body.get("token", ""),
                 ),
             )
         except ZenTaoError as exc:

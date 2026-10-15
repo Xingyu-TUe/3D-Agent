@@ -12,6 +12,16 @@ ROOT = Path(__file__).resolve().parent
 INDEX = ROOT / "index.html"
 
 
+def _apply_headers(handler, app):
+    headers = handler.headers
+    base_url = headers.get("X-Zentao-Base-Url", "")
+    account = headers.get("X-Zentao-Account", "")
+    password = headers.get("X-Zentao-Password", "")
+    token = headers.get("X-Zentao-Token", "")
+    if token or (account and password):
+        app.ensure_credentials(base_url, account, password, token)
+
+
 def make_handler(app):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -20,6 +30,13 @@ def make_handler(app):
                 self._file(INDEX, "text/html; charset=utf-8")
                 return
             if parsed.path == "/api/status":
+                try:
+                    _apply_headers(self, app)
+                except ZenTaoError as exc:
+                    payload = app.status()
+                    payload["error"] = str(exc)
+                    self._json(payload)
+                    return
                 self._json(app.status())
                 return
             if parsed.path == "/api/board":
@@ -27,6 +44,7 @@ def make_handler(app):
                 execution_id = (query.get("executionId") or [""])[0]
                 force = (query.get("force") or ["0"])[0] in ("1", "true", "yes")
                 try:
+                    _apply_headers(self, app)
                     self._json(app.board(execution_id, force=force))
                 except ZenTaoError as exc:
                     self._json({"error": str(exc)}, status=502)
@@ -38,7 +56,14 @@ def make_handler(app):
             if parsed.path == "/api/connect":
                 body = self._read_json()
                 try:
-                    self._json(app.connect(body.get("baseUrl", ""), body.get("account", ""), body.get("password", "")))
+                    self._json(
+                        app.connect(
+                            body.get("baseUrl", ""),
+                            body.get("account", ""),
+                            body.get("password", ""),
+                            token=body.get("token", ""),
+                        )
+                    )
                 except ZenTaoError as exc:
                     self._json({"error": str(exc)}, status=400)
                 except Exception as exc:

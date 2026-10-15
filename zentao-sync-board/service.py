@@ -52,6 +52,49 @@ class BoardApp:
             }
 
     def connect(self, base_url, account, password, token=""):
+        client = self._make_client(base_url, account, password, token)
+        with self.lock:
+            self.client = client
+            self.base_url = client.base_url
+            self.account = client.account
+            self.password = client.password
+            self.cache.clear()
+            self.previous.clear()
+            self.last_error = ""
+        if not _is_serverless():
+            self._save_config(client.base_url, client.account, client.password, client.token)
+        status = self.status()
+        # Return token so browser / serverless clients can reuse it on later requests.
+        status["token"] = client.token
+        return status
+
+    def ensure_credentials(self, base_url="", account="", password="", token=""):
+        """Attach ZenTao credentials for this request (needed on Vercel serverless)."""
+        base_url = (base_url or "").strip().rstrip("/")
+        account = (account or "").strip()
+        password = password or ""
+        token = (token or "").strip()
+        if not (token or (account and password)):
+            return False
+        with self.lock:
+            same = (
+                self.client is not None
+                and (not base_url or self.client.base_url == base_url)
+                and (not account or self.client.account == account)
+                and ((token and self.client.token == token) or (password and self.client.password == password))
+            )
+            if same:
+                return True
+        client = self._make_client(base_url or self.base_url or DEFAULT_BASE_URL, account, password, token)
+        with self.lock:
+            self.client = client
+            self.base_url = client.base_url
+            self.account = client.account
+            self.password = client.password
+            self.last_error = ""
+        return True
+
+    def _make_client(self, base_url, account, password, token=""):
         base_url = (base_url or DEFAULT_BASE_URL).strip().rstrip("/")
         account = (account or "").strip()
         password = password or ""
@@ -66,17 +109,7 @@ class BoardApp:
             client.token = token
         else:
             client.login()
-        with self.lock:
-            self.client = client
-            self.base_url = base_url
-            self.account = account
-            self.password = password
-            self.cache.clear()
-            self.previous.clear()
-            self.last_error = ""
-        if not _is_serverless():
-            self._save_config(base_url, account, password, token)
-        return self.status()
+        return client
 
     def disconnect(self):
         with self.lock:

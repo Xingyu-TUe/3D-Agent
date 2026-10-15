@@ -286,6 +286,7 @@
   </div>
   <script>
     const COLORS = ["#0e7c6b", "#1f6f8b", "#8a7356", "#2f6b4f", "#4d6a8a", "#a05a3c"];
+    const CREDS_KEY = "zentao-sync-board.creds";
     const state = {
       executionId: "588",
       memberId: "all",
@@ -298,6 +299,7 @@
       status: null,
       timer: null,
       loadSeq: 0,
+      creds: null,
     };
 
     const els = {
@@ -347,8 +349,42 @@
       return date.toLocaleString("zh-CN", { hour12: false });
     }
 
-    async function api(path, options) {
-      const response = await fetch(path, options);
+    function loadCreds() {
+      try {
+        const raw = sessionStorage.getItem(CREDS_KEY);
+        state.creds = raw ? JSON.parse(raw) : null;
+      } catch (_error) {
+        state.creds = null;
+      }
+      return state.creds;
+    }
+
+    function saveCreds(creds) {
+      state.creds = creds;
+      if (!creds) {
+        sessionStorage.removeItem(CREDS_KEY);
+        return;
+      }
+      sessionStorage.setItem(CREDS_KEY, JSON.stringify(creds));
+    }
+
+    function authHeaders() {
+      const creds = state.creds || loadCreds();
+      if (!creds) return {};
+      const headers = {};
+      if (creds.baseUrl) headers["X-Zentao-Base-Url"] = creds.baseUrl;
+      if (creds.account) headers["X-Zentao-Account"] = creds.account;
+      if (creds.password) headers["X-Zentao-Password"] = creds.password;
+      if (creds.token) headers["X-Zentao-Token"] = creds.token;
+      return headers;
+    }
+
+    async function api(path, options = {}) {
+      const headers = {
+        ...(options.headers || {}),
+        ...authHeaders(),
+      };
+      const response = await fetch(path, { ...options, headers });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         const error = new Error(data.error || "请求失败");
@@ -391,23 +427,28 @@
         : "数据源：内置演示数据";
       if (document.activeElement !== els.baseUrl && status.baseUrl) els.baseUrl.value = status.baseUrl;
       if (document.activeElement !== els.account && status.account) els.account.value = status.account;
-      els.disconnectBtn.classList.toggle("hidden", !live);
-      els.connectBtn.textContent = live ? "重新连接" : "连接禅道";
+      const hasSession = Boolean(state.creds && (state.creds.token || state.creds.password));
+      els.disconnectBtn.classList.toggle("hidden", !(live || hasSession));
+      els.connectBtn.textContent = live || hasSession ? "重新连接" : "连接禅道";
       if (state.connectError) {
         els.connectBanner.classList.add("error");
         els.connectBanner.textContent = state.connectError;
-      } else if (status.hosting === "vercel") {
-        els.connectBanner.classList.toggle("error", !status.envConfigured && !live);
-        els.connectBanner.textContent = status.envConfigured
-          ? (live
-            ? "Vercel 已通过环境变量连接禅道。"
-            : "已配置禅道环境变量；若仍显示演示数据，请检查账号权限或 REST API 是否开启。")
-          : "Vercel 线上版：在 Vercel 项目 Settings → Environment Variables 配置 ZENTAO_ACCOUNT、ZENTAO_PASSWORD（可选 ZENTAO_BASE_URL、ZENTAO_EXECUTION_ID）。未配置时使用演示数据。";
-      } else if (!status.error) {
+      } else if (status.error) {
+        els.connectBanner.classList.add("error");
+        els.connectBanner.textContent = status.error;
+      } else if (live || hasSession) {
         els.connectBanner.classList.remove("error");
         els.connectBanner.textContent = live
-          ? "已连接禅道。密码保存在本机 .zentao.local.json，不会进入 git。"
-          : "未连接时使用演示数据。填写账号后同步禅道执行（默认 #588）及同项目迭代。";
+          ? "已连接禅道。凭证保存在当前浏览器会话，每次同步都会带上（适配 Vercel 无状态）。"
+          : "已保存会话凭证，正在恢复连接…";
+      } else if (status.hosting === "vercel") {
+        els.connectBanner.classList.remove("error");
+        els.connectBanner.textContent = status.envConfigured
+          ? "已配置禅道环境变量；若仍显示演示数据，请检查账号权限或 REST API 是否开启。"
+          : "未连接时使用演示数据。填写账号密码后点「连接禅道」即可拉真实迭代数据（凭证只存在本浏览器会话）。";
+      } else {
+        els.connectBanner.classList.remove("error");
+        els.connectBanner.textContent = "未连接时使用演示数据。填写账号后同步禅道执行（默认 #588）及同项目迭代。";
       }
     }
 
@@ -693,17 +734,24 @@
         els.connectBanner.classList.remove("error");
         els.connectBanner.textContent = "正在连接禅道…";
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 15000);
+        const timer = setTimeout(() => controller.abort(), 20000);
+        const baseUrl = els.baseUrl.value.trim();
+        const account = els.account.value.trim();
+        const password = els.password.value || (state.creds && state.creds.password) || "";
+        const token = password ? "" : ((state.creds && state.creds.token) || "");
         try {
           state.status = await api("/api/connect", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              baseUrl: els.baseUrl.value.trim(),
-              account: els.account.value.trim(),
-              password: els.password.value,
-            }),
+            body: JSON.stringify({ baseUrl, account, password, token }),
             signal: controller.signal,
+          });
+          saveCreds({
+            baseUrl,
+            account,
+            // Prefer token for later serverless calls; keep password as fallback.
+            token: state.status.token || token || "",
+            password: password || "",
           });
           els.password.value = "";
           await loadBoard(true);
@@ -718,6 +766,7 @@
         }
       });
       els.disconnectBtn.addEventListener("click", async () => {
+        saveCreds(null);
         state.status = await api("/api/disconnect", { method: "POST" });
         state.memberId = "all";
         await loadBoard(true);
@@ -729,10 +778,16 @@
 
     async function init() {
       bind();
+      const saved = loadCreds();
+      if (saved) {
+        if (saved.baseUrl) els.baseUrl.value = saved.baseUrl;
+        if (saved.account) els.account.value = saved.account;
+      }
       try {
         state.status = await api("/api/status");
         state.pollSeconds = state.status.pollSeconds || 8;
         state.executionId = String(state.status.defaultExecutionId || "588");
+        if (state.status.error) state.connectError = state.status.error;
       } catch (error) {
         els.connectBanner.classList.add("error");
         els.connectBanner.textContent = error.message;
