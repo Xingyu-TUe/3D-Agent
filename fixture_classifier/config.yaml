@@ -1,0 +1,30 @@
+# 夹具单元分类 — MobileNetV3-Small 迁移学习默认配置
+# 本地数据集：将 data_root 改为 F:/AI单元分类 或复制到项目 data/ 目录
+
+data_root: "data/dataset"
+output_dir: "outputs/run"
+
+# 若数据集已含 train/ 与 val/ 子目录则设为 false；否则从 train 自动划分
+auto_split_val: true
+val_ratio: 0.15
+seed: 42
+
+image_size: 224
+batch_size: 32
+num_workers: 2
+
+epochs: 30
+learning_rate: 0.001
+weight_decay: 0.0001
+# 前若干 epoch 仅训练分类头，再解冻全网微调
+head_only_epochs: 3
+fine_tune_lr: 0.0001
+
+early_stop_patience: 8
+save_best_only: true
+
+# 轻度数据增强（3D 截图通常背景/视角较固定，不宜过强）
+augment:
+  horizontal_flip: true
+  rotation_degrees: 15
+  color_jitter: 0.1
