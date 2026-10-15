@@ -72,7 +72,7 @@
     .connect-actions { display: flex; gap: 8px; }
     .banner { grid-column: 1 / -1; font-size: 13px; color: var(--ink-soft); }
     .banner.error { color: var(--danger); }
-    .controls { display: grid; grid-template-columns: 1.3fr .9fr auto; gap: 12px; margin-bottom: 12px; }
+    .controls { display: grid; grid-template-columns: 1.1fr .8fr auto auto; gap: 12px; margin-bottom: 12px; align-items: end; }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
     .chip { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
     .chip.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -83,7 +83,7 @@
     .view-toggle { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(20,32,40,.05); gap: 4px; align-self: end; height: fit-content; }
     .view-toggle button { border: 0; background: transparent; padding: 10px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--ink-soft); cursor: pointer; }
     .view-toggle button.is-active { background: #fff; color: var(--ink); box-shadow: 0 4px 14px rgba(20,32,40,.08); }
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
     .stat { border-radius: 16px; padding: 16px 18px; min-height: 104px; }
     .stat__label { font-size: 13px; color: var(--muted); font-weight: 700; }
     .stat__value { font-size: 30px; font-weight: 700; letter-spacing: -.04em; line-height: 1.1; margin-top: 10px; }
@@ -148,6 +148,10 @@
     @keyframes pulse {
       70% { box-shadow: 0 0 0 10px rgba(24,160,106,0); }
     }
+    @media (max-width: 1100px) {
+      .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .controls { grid-template-columns: 1fr 1fr; }
+    }
     @media (max-width: 960px) {
       .hero, .controls, .stats, .connect, .detail-grid { grid-template-columns: 1fr; }
       .view-toggle { width: 100%; }
@@ -207,9 +211,16 @@
         <div class="select-wrap"><select id="iterationSelect"></select></div>
       </div>
       <div class="field">
-        <label for="memberFilter">人员筛选（只影响列表）</label>
+        <label for="memberFilter">人员筛选</label>
         <div class="select-wrap">
           <select id="memberFilter"><option value="all">全部开发人员</option></select>
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px">任务优先级</label>
+        <div class="view-toggle" id="priorityToggle" role="group" aria-label="任务优先级">
+          <button type="button" data-priority="p0p1">只看 P0+P1</button>
+          <button type="button" class="is-active" data-priority="all">所有任务</button>
         </div>
       </div>
       <div class="view-toggle" id="viewToggle">
@@ -302,6 +313,7 @@
         <li>已完成 = done，已关闭（closed）计入已完成，并归到完成人，而不是「Closed」账号。</li>
         <li>已取消不计入柱状图和合计。父任务不与子任务重复计算。</li>
         <li>工时默认是禅道预计工时（estimate）。柱状图可切换为预估工时对比。</li>
+        <li>P0+P1 = 禅道优先级 pri 为 1 或 2（1 最高）。工时完成率 = 已完成预计工时 / 合计预计工时。</li>
       </ul>
     </section>
   </div>
@@ -311,6 +323,7 @@
     const state = {
       executionId: "588",
       memberId: "all",
+      priority: "all",
       view: "summary",
       metric: "count",
       syncing: true,
@@ -424,17 +437,102 @@
       return COLORS[hash % COLORS.length];
     }
 
+    function matchesPriority(task) {
+      if (state.priority === "all") return true;
+      const pri = Number(task.pri);
+      // ZenTao pri: 1 highest. Treat 1/2 as P0/P1.
+      return pri === 1 || pri === 2;
+    }
+
+    function scopedTasks() {
+      return ((state.board && state.board.tasks) || []).filter(matchesPriority);
+    }
+
+    function emptyMetrics() {
+      return { count: 0, estimate: 0, consumed: 0, left: 0 };
+    }
+
+    function aggregateClient(tasks) {
+      const peopleMap = new Map();
+      const totals = {
+        wait: emptyMetrics(),
+        doing: emptyMetrics(),
+        done: emptyMetrics(),
+        other: emptyMetrics(),
+        total: emptyMetrics(),
+      };
+      for (const task of tasks) {
+        const bucket = task.bucket || "other";
+        if (!totals[bucket]) continue;
+        const target = totals[bucket];
+        target.count += 1;
+        target.estimate += Number(task.estimate) || 0;
+        target.consumed += Number(task.consumed) || 0;
+        target.left += Number(task.left) || 0;
+        if (bucket !== "other") {
+          totals.total.count += 1;
+          totals.total.estimate += Number(task.estimate) || 0;
+          totals.total.consumed += Number(task.consumed) || 0;
+          totals.total.left += Number(task.left) || 0;
+        }
+        if (bucket === "other") continue;
+        let row = peopleMap.get(task.ownerAccount);
+        if (!row) {
+          row = {
+            account: task.ownerAccount,
+            name: task.ownerName,
+            wait: emptyMetrics(),
+            doing: emptyMetrics(),
+            done: emptyMetrics(),
+            other: emptyMetrics(),
+          };
+          peopleMap.set(task.ownerAccount, row);
+        }
+        const cell = row[bucket] || row.other;
+        cell.count += 1;
+        cell.estimate += Number(task.estimate) || 0;
+        cell.consumed += Number(task.consumed) || 0;
+        cell.left += Number(task.left) || 0;
+      }
+      const peopleRows = [...peopleMap.values()].map((row) => {
+        const total = emptyMetrics();
+        for (const key of ["wait", "doing", "done"]) {
+          total.count += row[key].count;
+          total.estimate += row[key].estimate;
+          total.consumed += row[key].consumed;
+          total.left += row[key].left;
+        }
+        row.total = total;
+        row.rate = total.count ? Math.round((row.done.count / total.count) * 100) : 0;
+        return row;
+      });
+      peopleRows.sort((a, b) => (b.total.count - a.total.count) || (b.total.estimate - a.total.estimate) || a.name.localeCompare(b.name, "zh"));
+      const counted = totals.total.count;
+      return {
+        people: peopleRows,
+        totals: {
+          ...totals,
+          rate: counted ? Math.round((totals.done.count / counted) * 100) : 0,
+          hourRate: totals.total.estimate
+            ? Math.round((totals.done.estimate / totals.total.estimate) * 1000) / 10
+            : 0,
+          people: peopleRows.length,
+        },
+      };
+    }
+
     function people() {
-      return (state.board && state.board.people) || [];
+      return aggregateClient(scopedTasks()).people;
     }
 
     function filteredPeople() {
-      if (state.memberId === "all") return people();
-      return people().filter((person) => person.account === state.memberId);
+      const rows = people();
+      if (state.memberId === "all") return rows;
+      return rows.filter((person) => person.account === state.memberId);
     }
 
     function filteredTasks() {
-      const tasks = (state.board && state.board.tasks) || [];
+      const tasks = scopedTasks();
       if (state.memberId === "all") return tasks;
       return tasks.filter((task) => task.ownerAccount === state.memberId);
     }
@@ -477,16 +575,19 @@
     }
 
     function renderStats() {
-      const totals = (state.board && state.board.totals) || null;
-      if (!totals) {
+      if (!state.board) {
         els.stats.innerHTML = "";
         return;
       }
+      const { totals } = aggregateClient(scopedTasks());
+      const hourRate = totals.hourRate;
+      const taskRate = totals.rate;
       const cards = [
         ["未开始", totals.wait.count, `${fmtHours(totals.wait.estimate)} 预计`, "wait"],
         ["进行中", totals.doing.count, `${fmtHours(totals.doing.estimate)} 预计`, "doing"],
         ["已完成", totals.done.count, `${fmtHours(totals.done.estimate)} 预计`, "done"],
         ["合计", totals.total.count, `${fmtHours(totals.total.estimate)} · ${totals.people} 人`, "all"],
+        ["工时完成率", `${hourRate}%`, `${fmtHours(totals.done.estimate)} / ${fmtHours(totals.total.estimate)} · 任务 ${totals.done.count}/${totals.total.count}（${taskRate}%）`, "all"],
       ];
       els.stats.innerHTML = cards.map(([label, value, sub, tone]) => `
         <article class="stat" data-tone="${tone}">
@@ -494,8 +595,11 @@
           <div class="stat__value">${value}</div>
           <div class="stat__sub">${sub}</div>
         </article>`).join("");
-      if (totals.other.count) {
-        els.stats.insertAdjacentHTML("beforeend", `<p class="meta" style="grid-column:1/-1">另有 ${totals.other.count} 项已取消或其他状态，未计入合计与柱状图。</p>`);
+      const notes = [];
+      if (state.priority === "p0p1") notes.push("当前仅统计优先级 P0+P1（禅道 pri=1、2）。");
+      if (totals.other.count) notes.push(`另有 ${totals.other.count} 项已取消或其他状态，未计入合计与柱状图。`);
+      if (notes.length) {
+        els.stats.insertAdjacentHTML("beforeend", `<p class="meta" style="grid-column:1/-1">${notes.join(" ")}</p>`);
       }
     }
 
@@ -666,7 +770,7 @@
     }
 
     function renderUnassigned() {
-      const list = (state.board && state.board.unassignedTasks) || [];
+      const list = ((state.board && state.board.unassignedTasks) || []).filter(matchesPriority);
       if (!list.length) {
         els.unassignedPanel.classList.add("hidden");
         els.unassignedBody.innerHTML = "";
@@ -743,9 +847,25 @@
       });
       els.memberFilter.addEventListener("change", () => {
         state.memberId = els.memberFilter.value;
+        renderStats();
         renderChart();
         renderSummary();
         renderDetail();
+        renderUnassigned();
+      });
+      document.querySelectorAll("#priorityToggle button").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("#priorityToggle button").forEach((item) => item.classList.remove("is-active"));
+          button.classList.add("is-active");
+          state.priority = button.dataset.priority;
+          state.memberId = "all";
+          renderFilters();
+          renderStats();
+          renderChart();
+          renderSummary();
+          renderDetail();
+          renderUnassigned();
+        });
       });
       document.querySelectorAll("#viewToggle button").forEach((button) => {
         button.addEventListener("click", () => {
@@ -768,9 +888,11 @@
         if (!group) return;
         state.memberId = state.memberId === group.dataset.account ? "all" : group.dataset.account;
         els.memberFilter.value = state.memberId;
+        renderStats();
         renderChart();
         renderSummary();
         renderDetail();
+        renderUnassigned();
       });
       els.syncNowBtn.addEventListener("click", () => loadBoard(true));
       els.toggleSyncBtn.addEventListener("click", () => setSyncing(!state.syncing));
