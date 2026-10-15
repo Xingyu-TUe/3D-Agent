@@ -18,16 +18,19 @@ class AggregateTests(unittest.TestCase):
         by_name = {row["name"]: row for row in people}
 
         self.assertEqual(by_name["陈宇"]["wait"]["count"], 1)
-        self.assertEqual(by_name["陈宇"]["doing"]["count"], 1)
+        # +1 doing from demo multi-person team task (account-only team rows).
+        self.assertEqual(by_name["陈宇"]["doing"]["count"], 2)
         self.assertEqual(by_name["陈宇"]["done"]["count"], 1)
         self.assertEqual(by_name["陈宇"]["wait"]["estimate"], 8)
-        self.assertEqual(by_name["陈宇"]["total"]["count"], 3)
+        self.assertEqual(by_name["陈宇"]["total"]["count"], 4)
 
         # pause counts as doing; closed task stays with the finisher, not "closed".
         self.assertEqual(by_name["王凯"]["doing"]["count"], 2)
         self.assertEqual(by_name["王凯"]["done"]["count"], 1)
         self.assertEqual(by_name["王凯"]["doing"]["estimate"], 11)
         self.assertNotIn("closed", by_name)
+        team_names = {task["ownerName"] for task in tasks if task["id"] == "588-team"}
+        self.assertEqual(team_names, {"陈宇", "李娜"})
 
         # cancelled work is excluded from the main total.
         self.assertEqual(by_name["孙浩"]["other"]["count"], 1)
@@ -260,7 +263,7 @@ class BoardHttpTests(unittest.TestCase):
         payload = json.load(urllib.request.urlopen(self.base + "/api/board?executionId=588"))
         self.assertEqual(payload["mode"], "demo")
         self.assertEqual(payload["totals"]["wait"]["count"], 3)
-        self.assertEqual(payload["totals"]["doing"]["count"], 6)
+        self.assertEqual(payload["totals"]["doing"]["count"], 8)
         self.assertEqual(payload["totals"]["done"]["count"], 5)
         self.assertTrue(payload["people"])
         self.assertEqual(payload["people"][0]["total"]["count"], max(row["total"]["count"] for row in payload["people"]))

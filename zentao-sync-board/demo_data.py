@@ -102,4 +102,28 @@ def demo_tasks(execution_id):
                 "execution": int(execution_id) if str(execution_id).isdigit() else execution_id,
             }
         )
+    if str(execution_id) == "588":
+        # Team members without realname — should resolve via other tasks' Chinese names.
+        tasks.append(
+            {
+                "id": f"{execution_id}-team",
+                "name": "跨人联调",
+                "status": "doing",
+                "estimate": 8,
+                "consumed": 1,
+                "left": 7,
+                "pri": 2,
+                "type": "devel",
+                "parent": 0,
+                "assignedTo": "",
+                "assignedToRealName": "",
+                "mode": "multi",
+                "team": [
+                    {"account": "chen", "estimate": 4, "consumed": 0.5, "left": 3.5},
+                    {"account": "li", "estimate": 4, "consumed": 0.5, "left": 3.5},
+                ],
+                "project": 80,
+                "execution": 588,
+            }
+        )
     return tasks
