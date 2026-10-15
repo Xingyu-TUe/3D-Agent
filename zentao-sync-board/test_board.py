@@ -94,6 +94,52 @@ class AggregateTests(unittest.TestCase):
         self.assertEqual(by_name["李娜"]["doing"]["estimate"], 4)
         self.assertEqual(aggregate.unassigned_report(tasks), [])
 
+    def test_team_account_only_resolves_chinese_name_from_other_tasks(self):
+        raw = [
+            {
+                "id": 1,
+                "name": "多人任务",
+                "status": "doing",
+                "estimate": 4,
+                "parent": 0,
+                "assignedTo": "",
+                "team": [
+                    {"account": "liping.liu", "estimate": 2},
+                    {"account": "kaiyuan.hu", "estimate": 2},
+                ],
+            },
+            {
+                "id": 2,
+                "name": "单人任务",
+                "status": "wait",
+                "estimate": 3,
+                "parent": 0,
+                "assignedTo": {"account": "liping.liu", "realname": "刘利平"},
+            },
+            {
+                "id": 3,
+                "name": "另一单人",
+                "status": "wait",
+                "estimate": 1,
+                "parent": 0,
+                "assignedTo": {"account": "kaiyuan.hu", "realname": "胡恺元"},
+            },
+        ]
+        people, tasks = aggregate.aggregate_people(raw)
+        by_account = {row["account"]: row for row in people}
+        self.assertEqual(by_account["liping.liu"]["name"], "刘利平")
+        self.assertEqual(by_account["kaiyuan.hu"]["name"], "胡恺元")
+        team_rows = [task for task in tasks if task["id"] == "1"]
+        self.assertEqual({row["ownerName"] for row in team_rows}, {"刘利平", "胡恺元"})
+
+    def test_p0_p1_excludes_pri_2(self):
+        self.assertTrue(aggregate.is_p0_p1(1))
+        self.assertTrue(aggregate.is_p0_p1(0))
+        self.assertFalse(aggregate.is_p0_p1(2))
+        self.assertFalse(aggregate.is_p0_p1(3))
+        self.assertEqual(aggregate.pri_label(2), "P2")
+        self.assertEqual(aggregate.pri_label(1), "P1")
+
     def test_literal_wu_assignee_falls_back_to_finished_by(self):
         raw = [
             {

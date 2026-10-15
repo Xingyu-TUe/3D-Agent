@@ -59,9 +59,95 @@ def person(value):
     return None
 
 
-def team_members(task):
+def _remember_name(directory, account, name):
+    """Prefer Chinese / non-account display names over login accounts."""
+    account = str(account or "").strip()
+    name = str(name or "").strip()
+    if not account or account.lower() in EMPTY_ACCOUNTS or account in EMPTY_ACCOUNTS:
+        return
+    if not name or name in EMPTY_ACCOUNTS:
+        return
+    current = directory.get(account)
+    if current is None or current == account or (name != account and current == account):
+        directory[account] = name
+    elif name != account and _looks_like_account(current) and not _looks_like_account(name):
+        directory[account] = name
+
+
+def _looks_like_account(value):
+    text = str(value or "")
+    if not text or text == "__unassigned__":
+        return True
+    if "." in text and all(part.replace("_", "").isalnum() for part in text.split(".")):
+        return True
+    # ASCII login-style tokens without CJK.
+    return bool(text.isascii() and any(ch.isalpha() for ch in text) and " " not in text)
+
+
+def display_name(account, fallback=""):
+    account = str(account or "").strip()
+    fallback = str(fallback or "").strip()
+    if account == "__unassigned__":
+        return "未指派"
+    if fallback and not _looks_like_account(fallback):
+        return fallback
+    if fallback and fallback != account:
+        return fallback
+    return fallback or account
+
+
+def pri_label(pri):
+    """Match common ZenTao UI habit: priority number N is shown as PN (P1/P2/…)."""
+    if pri is None:
+        return ""
+    try:
+        number = int(pri)
+    except (TypeError, ValueError):
+        return str(pri)
+    return f"P{number}"
+
+
+def is_p0_p1(pri):
+    """P0+P1 = highest band only. ZenTao pri=1 is P1; pri=2 is P2 and must be excluded."""
+    try:
+        number = int(pri)
+    except (TypeError, ValueError):
+        return False
+    return number <= 1
+
+
+def build_name_directory(raw_tasks):
+    """Collect account → realname from assignees / finishers / team rows across the iteration."""
+    directory = {}
+    for raw in flatten_tasks(raw_tasks):
+        real = str(raw.get("assignedToRealName") or "").strip()
+        assigned = person(raw.get("assignedTo"))
+        if assigned:
+            _remember_name(directory, assigned["account"], assigned["name"])
+            if real:
+                _remember_name(directory, assigned["account"], real)
+        elif real:
+            # Rare: realname present but assignedTo empty/invalid.
+            pass
+        for key in ("finishedBy", "closedBy", "openedBy", "lastEditedBy"):
+            found = person(raw.get(key))
+            if found:
+                _remember_name(directory, found["account"], found["name"])
+        for row in raw.get("team") or []:
+            if not isinstance(row, dict):
+                continue
+            found = person(row) or person(
+                {"account": row.get("account"), "realname": row.get("realname") or row.get("realName")}
+            )
+            if found:
+                _remember_name(directory, found["account"], found["name"])
+    return directory
+
+
+def team_members(task, name_directory=None):
     members = []
     seen = set()
+    name_directory = name_directory or {}
     for row in task.get("team") or []:
         if not isinstance(row, dict):
             continue
@@ -71,10 +157,11 @@ def team_members(task):
         if found["account"] in seen:
             continue
         seen.add(found["account"])
+        resolved = name_directory.get(found["account"]) or found["name"]
         members.append(
             {
                 "account": found["account"],
-                "name": found["name"],
+                "name": display_name(found["account"], resolved),
                 "estimate": _num(row.get("estimate")),
                 "consumed": _num(row.get("consumed")),
                 "left": _num(row.get("left")),
@@ -95,27 +182,35 @@ def describe_assignee(value):
     return str(value)
 
 
-def resolve_owners(task):
+def resolve_owners(task, name_directory=None):
     """
     Return (owners, reason).
     owners: list of {account, name, estimate?, consumed?, left?}
     Multi-person team tasks without assignedTo are attributed to team members,
     not lumped into 未指派.
     """
+    name_directory = name_directory or {}
     assigned = person(task.get("assignedTo"))
     realname = str(task.get("assignedToRealName") or "").strip()
     if assigned:
-        if realname and assigned["name"] == assigned["account"]:
+        if realname and (assigned["name"] == assigned["account"] or _looks_like_account(assigned["name"])):
             assigned["name"] = realname
+        mapped = name_directory.get(assigned["account"])
+        if mapped:
+            assigned["name"] = display_name(assigned["account"], mapped)
+        else:
+            assigned["name"] = display_name(assigned["account"], assigned["name"])
         return [assigned], "assignedTo"
 
-    members = team_members(task)
+    members = team_members(task, name_directory=name_directory)
     if members:
         return members, "team"
 
     for key in ("finishedBy", "closedBy", "openedBy", "lastEditedBy"):
         found = person(task.get(key))
         if found:
+            mapped = name_directory.get(found["account"])
+            found["name"] = display_name(found["account"], mapped or found["name"])
             return [found], key
 
     return [{"account": "__unassigned__", "name": "未指派"}], "unassigned"
@@ -174,12 +269,14 @@ def _add(metrics, task):
     metrics["left"] += task["left"]
 
 
-def normalize_task_rows(raw):
+def normalize_task_rows(raw, name_directory=None):
     """One ZenTao task may expand into multiple rows (multi-person team)."""
+    name_directory = name_directory or {}
     status = str(raw.get("status") or "").strip().lower()
     bucket = BUCKETS.get(status, "other")
-    owners, reason = resolve_owners(raw)
-    pri = raw.get("pri")
+    owners, reason = resolve_owners(raw, name_directory=name_directory)
+    pri_raw = raw.get("pri")
+    pri = _int(pri_raw, 0) if pri_raw not in (None, "") else None
     base = {
         "id": str(raw.get("id")),
         "name": str(raw.get("name") or "未命名任务"),
@@ -189,8 +286,9 @@ def normalize_task_rows(raw):
         "assignReason": reason,
         "assignedToRaw": describe_assignee(raw.get("assignedTo")),
         "assignedToRealName": str(raw.get("assignedToRealName") or ""),
-        "teamAccounts": [member["account"] for member in team_members(raw)],
-        "pri": _int(pri, 0) if pri not in (None, "") else None,
+        "teamAccounts": [member["account"] for member in team_members(raw, name_directory=name_directory)],
+        "pri": pri,
+        "priLabel": pri_label(pri),
         "type": str(raw.get("type") or ""),
         "mode": str(raw.get("mode") or ""),
     }
@@ -242,8 +340,13 @@ def normalize_task_rows(raw):
 def aggregate_people(raw_tasks):
     people = {}
     tasks = []
+    name_directory = build_name_directory(raw_tasks)
     for raw in flatten_tasks(raw_tasks):
-        for task in normalize_task_rows(raw):
+        for task in normalize_task_rows(raw, name_directory=name_directory):
+            # Final pass: team-only accounts often lack realname on the row itself.
+            mapped = name_directory.get(task["ownerAccount"])
+            if mapped:
+                task["ownerName"] = display_name(task["ownerAccount"], mapped)
             tasks.append(task)
             person_row = people.get(task["ownerAccount"])
             if person_row is None:
@@ -256,7 +359,7 @@ def aggregate_people(raw_tasks):
                     "other": _empty_metrics(),
                 }
                 people[task["ownerAccount"]] = person_row
-            elif person_row["name"] == person_row["account"] and task["ownerName"] != task["ownerAccount"]:
+            elif _looks_like_account(person_row["name"]) and not _looks_like_account(task["ownerName"]):
                 person_row["name"] = task["ownerName"]
             _add(person_row[task["bucket"]], task)
 

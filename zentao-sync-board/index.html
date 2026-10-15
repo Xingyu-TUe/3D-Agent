@@ -313,7 +313,7 @@
         <li>已完成 = done，已关闭（closed）计入已完成，并归到完成人，而不是「Closed」账号。</li>
         <li>已取消不计入柱状图和合计。父任务不与子任务重复计算。</li>
         <li>工时默认是禅道预计工时（estimate）。柱状图可切换为预估工时对比。</li>
-        <li>P0+P1 = 禅道优先级 pri 为 1 或 2（1 最高）。工时完成率 = 已完成预计工时 / 合计预计工时。</li>
+        <li>P0+P1 = 禅道最高优先级 pri≤1（界面常标为 P1；pri=2 即 P2，会被排除）。工时完成率 = 已完成预计工时 / 合计预计工时。</li>
       </ul>
     </section>
   </div>
@@ -440,12 +440,41 @@
     function matchesPriority(task) {
       if (state.priority === "all") return true;
       const pri = Number(task.pri);
-      // ZenTao pri: 1 highest. Treat 1/2 as P0/P1.
-      return pri === 1 || pri === 2;
+      // ZenTao pri N is shown as PN. P0+P1 = highest band only (pri≤1); P2=pri2 is excluded.
+      return Number.isFinite(pri) && pri <= 1;
+    }
+
+    function nameDirectory() {
+      const map = {};
+      for (const person of (state.board && state.board.people) || []) {
+        if (person.account && person.name) map[person.account] = person.name;
+      }
+      for (const task of (state.board && state.board.tasks) || []) {
+        if (!task.ownerAccount) continue;
+        const current = map[task.ownerAccount];
+        const candidate = task.ownerName || "";
+        if (!current || current === task.ownerAccount) {
+          if (candidate && candidate !== task.ownerAccount) map[task.ownerAccount] = candidate;
+          else if (!current) map[task.ownerAccount] = candidate || task.ownerAccount;
+        }
+      }
+      return map;
+    }
+
+    function resolveOwnerName(account, fallback, directory) {
+      if (account === "__unassigned__") return "未指派";
+      const mapped = directory[account];
+      if (mapped && mapped !== account) return mapped;
+      if (fallback && fallback !== account) return fallback;
+      return mapped || fallback || account;
     }
 
     function scopedTasks() {
-      return ((state.board && state.board.tasks) || []).filter(matchesPriority);
+      const directory = nameDirectory();
+      return ((state.board && state.board.tasks) || []).filter(matchesPriority).map((task) => ({
+        ...task,
+        ownerName: resolveOwnerName(task.ownerAccount, task.ownerName, directory),
+      }));
     }
 
     function emptyMetrics() {
@@ -487,6 +516,8 @@
             other: emptyMetrics(),
           };
           peopleMap.set(task.ownerAccount, row);
+        } else if ((row.name === row.account || !row.name) && task.ownerName && task.ownerName !== task.ownerAccount) {
+          row.name = task.ownerName;
         }
         const cell = row[bucket] || row.other;
         cell.count += 1;
@@ -596,7 +627,7 @@
           <div class="stat__sub">${sub}</div>
         </article>`).join("");
       const notes = [];
-      if (state.priority === "p0p1") notes.push("当前仅统计优先级 P0+P1（禅道 pri=1、2）。");
+      if (state.priority === "p0p1") notes.push("当前仅统计优先级 P0+P1（禅道 pri≤1；P2=pri2 已排除）。");
       if (totals.other.count) notes.push(`另有 ${totals.other.count} 项已取消或其他状态，未计入合计与柱状图。`);
       if (notes.length) {
         els.stats.insertAdjacentHTML("beforeend", `<p class="meta" style="grid-column:1/-1">${notes.join(" ")}</p>`);
@@ -722,7 +753,7 @@
               ${list.map((task) => `
                 <article class="task">
                   <div class="task__title">${esc(task.name)}</div>
-                  <div class="task__meta"><span>${esc(task.ownerName)} · ${esc(task.statusLabel)}</span><span>${fmtHours(task.estimate)}</span></div>
+                  <div class="task__meta"><span>${esc(task.ownerName)} · ${esc(task.priLabel || (task.pri != null ? `P${task.pri}` : "P?"))} · ${esc(task.statusLabel)}</span><span>${fmtHours(task.estimate)}</span></div>
                 </article>`).join("") || `<div class="meta" style="padding:8px">暂无任务</div>`}
             </div>
           </div>`;
