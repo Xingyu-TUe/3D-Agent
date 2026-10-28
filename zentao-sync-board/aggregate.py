@@ -107,13 +107,17 @@ def pri_label(pri):
     return f"P{number}"
 
 
-def is_p0_p1(pri):
-    """P0+P1 = highest band only. ZenTao pri=1 is P1; pri=2 is P2 and must be excluded."""
+def is_p1_p2(pri):
+    """P1+P2 filter: ZenTao has no P0; pri=1 → P1, pri=2 → P2."""
     try:
         number = int(pri)
     except (TypeError, ValueError):
         return False
-    return number <= 1
+    return number in (1, 2)
+
+
+# Back-compat alias for older imports/tests.
+is_p0_p1 = is_p1_p2
 
 
 def build_name_directory(raw_tasks):

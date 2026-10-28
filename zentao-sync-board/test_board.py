@@ -135,11 +135,11 @@ class AggregateTests(unittest.TestCase):
         team_rows = [task for task in tasks if task["id"] == "1"]
         self.assertEqual({row["ownerName"] for row in team_rows}, {"刘利平", "胡恺元"})
 
-    def test_p0_p1_excludes_pri_2(self):
-        self.assertTrue(aggregate.is_p0_p1(1))
-        self.assertTrue(aggregate.is_p0_p1(0))
-        self.assertFalse(aggregate.is_p0_p1(2))
-        self.assertFalse(aggregate.is_p0_p1(3))
+    def test_p1_p2_includes_pri_1_and_2(self):
+        self.assertTrue(aggregate.is_p1_p2(1))
+        self.assertTrue(aggregate.is_p1_p2(2))
+        self.assertFalse(aggregate.is_p1_p2(0))
+        self.assertFalse(aggregate.is_p1_p2(3))
         self.assertEqual(aggregate.pri_label(2), "P2")
         self.assertEqual(aggregate.pri_label(1), "P1")
 
