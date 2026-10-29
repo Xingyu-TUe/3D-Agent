@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 
 from aggregate import aggregate_people, normalize_execution, roles_from_users, summarize, unassigned_report
-from demo_data import demo_executions, demo_roles, demo_tasks
+from demo_data import demo_executions, demo_tasks
 from zentao_client import ZenTaoClient, ZenTaoError
 
 CONFIG_PATH = Path(__file__).with_name(".zentao.local.json")
@@ -178,17 +178,15 @@ class BoardApp:
                 }
 
         people, tasks = aggregate_people(snapshot["raw_tasks"], roles=snapshot.get("roles") or {})
-        excluded = _excluded_people(tasks)
-        visible = [task for task in tasks if not task.get("excluded")]
-        changes = self._record_changes(execution_id, visible)
+        changes = self._record_changes(execution_id, tasks)
         cached = {
             "at": self.now(),
             "execution": snapshot["execution"],
             "executions": snapshot["executions"],
             "people": people,
-            "tasks": visible,
-            "excludedPeople": excluded,
-            "unassignedTasks": unassigned_report(visible),
+            "tasks": tasks,
+            "excludedPeople": [],
+            "unassignedTasks": unassigned_report(tasks),
             "totals": summarize(people),
             "mode": "demo" if client is None else "live",
         }
@@ -210,7 +208,7 @@ class BoardApp:
             "execution": execution,
             "executions": executions,
             "raw_tasks": demo_tasks(execution_id),
-            "roles": demo_roles(execution_id),
+            "roles": {},
         }
 
     def _live_snapshot(self, client, execution_id):

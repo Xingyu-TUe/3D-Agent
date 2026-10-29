@@ -473,12 +473,10 @@ def aggregate_people(raw_tasks, roles=None):
             task["ownerRole"] = str(role or "")
             task["ownerDept"] = str(dept or "")
             task["ownerRoleLabel"] = role_label(task["ownerRole"]) or task["ownerDept"]
-            task["excluded"] = is_excluded_person(
-                task["ownerAccount"], task["ownerName"], task["ownerRole"], task["ownerDept"]
-            )
+            # Everyone with tasks stays in the totals. Dropping product/QA
+            # removed real iteration hours and made the summary wrong.
+            task["excluded"] = False
             tasks.append(task)
-            if task["excluded"]:
-                continue
             person_row = people.get(task["ownerAccount"])
             if person_row is None:
                 person_row = {
