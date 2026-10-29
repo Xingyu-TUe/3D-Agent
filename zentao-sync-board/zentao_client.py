@@ -72,14 +72,62 @@ class ZenTaoClient:
         return self._collect(f"/api.php/v1/executions/{execution_id}/tasks", "tasks")
 
     def list_users(self):
-        for key in ("users", "user"):
+        """Inside-user browse includes role; the default list often omits it."""
+        items = []
+        seen = set()
+        page = 1
+        while page <= 20:
+            query = urllib.parse.urlencode({"page": page, "limit": 100, "browse": "inside"})
             try:
-                rows = self._collect("/api.php/v1/users", key)
+                payload = self._request("GET", f"/api.php/v1/users?{query}")
             except ZenTaoError:
-                continue
-            if rows:
-                return rows
-        return []
+                break
+            batch = []
+            if isinstance(payload, dict):
+                batch = payload.get("users") or payload.get("user") or []
+            elif isinstance(payload, list):
+                batch = payload
+            if not isinstance(batch, list) or not batch:
+                break
+            fresh = 0
+            for item in batch:
+                if not isinstance(item, dict):
+                    continue
+                item_id = str(item.get("id") or item.get("account") or "")
+                if item_id in seen:
+                    continue
+                seen.add(item_id)
+                items.append(item)
+                fresh += 1
+            if not fresh:
+                break
+            page += 1
+        return items
+
+    def list_departments(self):
+        try:
+            payload = self._request("GET", "/api.php/v1/departments")
+        except ZenTaoError:
+            return []
+        rows = []
+        if isinstance(payload, dict):
+            rows = payload.get("departments") or payload.get("depts") or []
+        elif isinstance(payload, list):
+            rows = payload
+        flat = []
+
+        def walk(nodes):
+            for node in nodes or []:
+                if not isinstance(node, dict):
+                    continue
+                flat.append(node)
+                children = node.get("children") or node.get("child") or []
+                if isinstance(children, dict):
+                    children = list(children.values())
+                walk(children)
+
+        walk(rows if isinstance(rows, list) else [])
+        return flat
 
     def _collect(self, path, key):
         items = []

@@ -238,11 +238,17 @@ class BoardApp:
             executions.append(execution)
         executions.sort(key=lambda item: item["begin"] or item["id"], reverse=True)
         users = []
+        departments = []
         if hasattr(client, "list_users"):
             try:
                 users = client.list_users() or []
             except ZenTaoError:
                 users = []
+        if hasattr(client, "list_departments"):
+            try:
+                departments = client.list_departments() or []
+            except ZenTaoError:
+                departments = []
         if isinstance(detail, dict):
             for key in ("team", "members", "users"):
                 rows = detail.get(key) or []
@@ -250,11 +256,16 @@ class BoardApp:
                     rows = list(rows.values())
                 if isinstance(rows, list):
                     users.extend(row for row in rows if isinstance(row, dict))
+        dept_names = {
+            str(item.get("id")): str(item.get("name") or "")
+            for item in departments
+            if isinstance(item, dict) and item.get("id") not in (None, "")
+        }
         return {
             "execution": execution,
             "executions": executions,
             "raw_tasks": raw_tasks,
-            "roles": roles_from_users(users),
+            "roles": roles_from_users(users, dept_names),
         }
 
     def _record_changes(self, execution_id, tasks):

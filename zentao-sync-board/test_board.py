@@ -183,6 +183,47 @@ class AggregateTests(unittest.TestCase):
         self.assertFalse(aggregate.is_excluded_role("dev"))
         self.assertFalse(aggregate.is_excluded_role("pm"))
 
+    def test_named_product_manager_hidden_without_role_code(self):
+        raw = [
+            {
+                "id": 1,
+                "name": "开发任务",
+                "status": "doing",
+                "estimate": 2,
+                "parent": 0,
+                "assignedTo": {"account": "zhao.huang", "realname": "黄钊"},
+            },
+            {
+                "id": 2,
+                "name": "需求",
+                "status": "wait",
+                "estimate": 4,
+                "parent": 0,
+                "assignedTo": {"account": "xingyu.fu", "realname": "付星宇"},
+            },
+        ]
+        people, tasks = aggregate.aggregate_people(
+            raw,
+            roles={"qa.wang": {"role": "", "name": "王测", "dept": "测试组"}},
+        )
+        # Dept exclusion applies when that account owns a task.
+        raw.append(
+            {
+                "id": 3,
+                "name": "用例",
+                "status": "wait",
+                "estimate": 1,
+                "parent": 0,
+                "assignedTo": {"account": "qa.wang", "realname": "王测"},
+            }
+        )
+        people, tasks = aggregate.aggregate_people(
+            raw,
+            roles={"qa.wang": {"role": "", "name": "王测", "dept": "测试组"}},
+        )
+        self.assertEqual({row["name"] for row in people}, {"黄钊"})
+        self.assertEqual({task["ownerName"] for task in tasks if task.get("excluded")}, {"付星宇", "王测"})
+
     def test_p1_p2_includes_pri_1_and_2(self):
         self.assertTrue(aggregate.is_p1_p2(1))
         self.assertTrue(aggregate.is_p1_p2(2))

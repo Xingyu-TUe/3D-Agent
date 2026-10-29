@@ -130,6 +130,9 @@ ROLE_LABELS = {
 }
 EXCLUDED_ROLE_CODES = {"po", "pd", "qa", "qd"}
 EXCLUDED_ROLE_LABELS = {"产品经理", "产品主管", "测试", "测试主管", "测试人员"}
+# Named example when ZenTao does not return a role code on the task itself.
+EXPLICIT_EXCLUDED_ACCOUNTS = {"xingyu.fu"}
+EXPLICIT_EXCLUDED_NAMES = {"付星宇"}
 
 
 def role_label(role):
@@ -150,8 +153,28 @@ def is_excluded_role(role):
     return text in EXCLUDED_ROLE_LABELS or label in EXCLUDED_ROLE_LABELS
 
 
-def roles_from_users(users):
-    """account -> {role, name} from ZenTao user or team rows."""
+def dept_is_non_dev(name):
+    text = str(name or "").strip()
+    if not text:
+        return False
+    if any(word in text for word in ("研发", "开发", "前端", "后端", "算法")):
+        return False
+    return ("产品" in text) or ("测试" in text)
+
+
+def is_excluded_person(account, name, role, dept=""):
+    if str(account or "").strip() in EXPLICIT_EXCLUDED_ACCOUNTS:
+        return True
+    if str(name or "").strip() in EXPLICIT_EXCLUDED_NAMES:
+        return True
+    if is_excluded_role(role):
+        return True
+    return dept_is_non_dev(dept)
+
+
+def roles_from_users(users, dept_names=None):
+    """account -> {role, name, dept} from ZenTao user or team rows."""
+    dept_names = {str(key): value for key, value in (dept_names or {}).items()}
     directory = {}
     for user in users or []:
         if not isinstance(user, dict):
@@ -161,11 +184,18 @@ def roles_from_users(users):
             continue
         role = str(user.get("role") or user.get("roleName") or "").strip()
         name = str(user.get("realname") or user.get("realName") or user.get("name") or "").strip()
-        current = directory.get(account) or {"role": "", "name": ""}
+        dept = user.get("dept") if user.get("dept") not in (None, "") else user.get("deptID")
+        if isinstance(dept, dict):
+            dept_name = str(dept.get("name") or "").strip()
+        else:
+            dept_name = str(dept_names.get(str(dept or ""), "") or "").strip()
+        current = directory.get(account) or {"role": "", "name": "", "dept": ""}
         if role:
             current["role"] = role
         if name:
             current["name"] = name
+        if dept_name:
+            current["dept"] = dept_name
         directory[account] = current
     return directory
 
@@ -422,6 +452,8 @@ def aggregate_people(raw_tasks, roles=None):
                 current["role"] = info["role"]
             if info.get("name"):
                 current["name"] = info["name"]
+            if info.get("dept"):
+                current["dept"] = info["dept"]
         elif info:
             current["role"] = str(info)
         role_directory[account] = current
@@ -437,9 +469,13 @@ def aggregate_people(raw_tasks, roles=None):
                 task["ownerName"] = display_name(task["ownerAccount"], mapped)
             info = (role_directory or {}).get(task["ownerAccount"]) or {}
             role = info.get("role") if isinstance(info, dict) else str(info or "")
+            dept = info.get("dept") if isinstance(info, dict) else ""
             task["ownerRole"] = str(role or "")
-            task["ownerRoleLabel"] = role_label(task["ownerRole"])
-            task["excluded"] = is_excluded_role(task["ownerRole"])
+            task["ownerDept"] = str(dept or "")
+            task["ownerRoleLabel"] = role_label(task["ownerRole"]) or task["ownerDept"]
+            task["excluded"] = is_excluded_person(
+                task["ownerAccount"], task["ownerName"], task["ownerRole"], task["ownerDept"]
+            )
             tasks.append(task)
             if task["excluded"]:
                 continue
