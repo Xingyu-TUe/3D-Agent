@@ -135,6 +135,54 @@ class AggregateTests(unittest.TestCase):
         team_rows = [task for task in tasks if task["id"] == "1"]
         self.assertEqual({row["ownerName"] for row in team_rows}, {"刘利平", "胡恺元"})
 
+    def test_product_and_qa_are_left_off_the_board(self):
+        raw = [
+            {
+                "id": 1,
+                "name": "开发任务",
+                "status": "done",
+                "estimate": 3,
+                "parent": 0,
+                "assignedTo": {"account": "zhao.huang", "realname": "黄钊", "role": "dev"},
+            },
+            {
+                "id": 2,
+                "name": "未完成开发",
+                "status": "wait",
+                "estimate": 2,
+                "parent": 0,
+                "assignedTo": {"account": "zhao.huang", "realname": "黄钊", "role": "dev"},
+            },
+            {
+                "id": 3,
+                "name": "需求澄清",
+                "status": "doing",
+                "estimate": 6,
+                "parent": 0,
+                "assignedTo": {"account": "xingyu.fu", "realname": "付星宇", "role": "po"},
+            },
+            {
+                "id": 4,
+                "name": "回归用例",
+                "status": "wait",
+                "estimate": 4,
+                "parent": 0,
+                "assignedTo": {"account": "qa.li", "realname": "李测", "role": "qa"},
+            },
+        ]
+        people, tasks = aggregate.aggregate_people(raw)
+        names = {row["name"] for row in people}
+        self.assertEqual(names, {"黄钊"})
+        self.assertEqual(people[0]["hourRate"], 60)
+        self.assertEqual(people[0]["done"]["estimate"], 3)
+        self.assertEqual(people[0]["total"]["estimate"], 5)
+        excluded = {task["ownerName"] for task in tasks if task.get("excluded")}
+        self.assertEqual(excluded, {"付星宇", "李测"})
+        self.assertTrue(aggregate.is_excluded_role("产品经理"))
+        self.assertTrue(aggregate.is_excluded_role("测试主管"))
+        self.assertFalse(aggregate.is_excluded_role("dev"))
+        self.assertFalse(aggregate.is_excluded_role("pm"))
+
     def test_p1_p2_includes_pri_1_and_2(self):
         self.assertTrue(aggregate.is_p1_p2(1))
         self.assertTrue(aggregate.is_p1_p2(2))
@@ -267,6 +315,11 @@ class BoardHttpTests(unittest.TestCase):
         self.assertEqual(payload["totals"]["done"]["count"], 5)
         self.assertTrue(payload["people"])
         self.assertEqual(payload["people"][0]["total"]["count"], max(row["total"]["count"] for row in payload["people"]))
+        names = {row["name"] for row in payload["people"]}
+        self.assertNotIn("付星宇", names)
+        self.assertNotIn("李测", names)
+        hidden = {row["name"] for row in payload["excludedPeople"]}
+        self.assertEqual(hidden, {"付星宇", "李测"})
 
     def test_connect_switches_to_live_counts(self):
         body = json.dumps({"baseUrl": "https://zentao.example", "account": "dev", "password": "pw"}).encode()

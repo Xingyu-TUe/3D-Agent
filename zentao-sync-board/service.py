@@ -6,14 +6,36 @@ import threading
 import time
 from pathlib import Path
 
-from aggregate import aggregate_people, normalize_execution, summarize, unassigned_report
-from demo_data import demo_executions, demo_tasks
+from aggregate import aggregate_people, normalize_execution, roles_from_users, summarize, unassigned_report
+from demo_data import demo_executions, demo_roles, demo_tasks
 from zentao_client import ZenTaoClient, ZenTaoError
 
 CONFIG_PATH = Path(__file__).with_name(".zentao.local.json")
 DEFAULT_BASE_URL = "https://zentao.designorder.cn"
 DEFAULT_EXECUTION_ID = "588"
 CACHE_TTL_SECONDS = 8
+
+
+def _excluded_people(tasks):
+    seen = set()
+    rows = []
+    for task in tasks or []:
+        if not task.get("excluded"):
+            continue
+        account = task.get("ownerAccount")
+        if account in seen:
+            continue
+        seen.add(account)
+        rows.append(
+            {
+                "account": account,
+                "name": task.get("ownerName") or account,
+                "role": task.get("ownerRole") or "",
+                "roleLabel": task.get("ownerRoleLabel") or "",
+            }
+        )
+    rows.sort(key=lambda item: item["name"])
+    return rows
 
 
 def _is_serverless():
@@ -155,15 +177,18 @@ class BoardApp:
                     "raw_tasks": [],
                 }
 
-        people, tasks = aggregate_people(snapshot["raw_tasks"])
-        changes = self._record_changes(execution_id, tasks)
+        people, tasks = aggregate_people(snapshot["raw_tasks"], roles=snapshot.get("roles") or {})
+        excluded = _excluded_people(tasks)
+        visible = [task for task in tasks if not task.get("excluded")]
+        changes = self._record_changes(execution_id, visible)
         cached = {
             "at": self.now(),
             "execution": snapshot["execution"],
             "executions": snapshot["executions"],
             "people": people,
-            "tasks": tasks,
-            "unassignedTasks": unassigned_report(tasks),
+            "tasks": visible,
+            "excludedPeople": excluded,
+            "unassignedTasks": unassigned_report(visible),
             "totals": summarize(people),
             "mode": "demo" if client is None else "live",
         }
@@ -185,6 +210,7 @@ class BoardApp:
             "execution": execution,
             "executions": executions,
             "raw_tasks": demo_tasks(execution_id),
+            "roles": demo_roles(execution_id),
         }
 
     def _live_snapshot(self, client, execution_id):
@@ -211,7 +237,25 @@ class BoardApp:
         if not any(item["id"] == execution["id"] for item in executions):
             executions.append(execution)
         executions.sort(key=lambda item: item["begin"] or item["id"], reverse=True)
-        return {"execution": execution, "executions": executions, "raw_tasks": raw_tasks}
+        users = []
+        if hasattr(client, "list_users"):
+            try:
+                users = client.list_users() or []
+            except ZenTaoError:
+                users = []
+        if isinstance(detail, dict):
+            for key in ("team", "members", "users"):
+                rows = detail.get(key) or []
+                if isinstance(rows, dict):
+                    rows = list(rows.values())
+                if isinstance(rows, list):
+                    users.extend(row for row in rows if isinstance(row, dict))
+        return {
+            "execution": execution,
+            "executions": executions,
+            "raw_tasks": raw_tasks,
+            "roles": roles_from_users(users),
+        }
 
     def _record_changes(self, execution_id, tasks):
         current = {task["id"]: task for task in tasks}
@@ -258,6 +302,7 @@ class BoardApp:
             "executions": cached["executions"],
             "people": cached["people"],
             "tasks": cached["tasks"],
+            "excludedPeople": cached.get("excludedPeople") or [],
             "unassignedTasks": cached.get("unassignedTasks") or unassigned_report(cached["tasks"]),
             "totals": cached["totals"],
             "changes": feed,

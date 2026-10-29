@@ -45,6 +45,8 @@ _ROWS = {
         ("权限中间层", "sun", "孙浩", "done", 7, 8, 0),
         ("审计日志落库", "sun", "孙浩", "doing", 6, 1, 5),
         ("导出 CSV", "sun", "孙浩", "cancel", 4, 0, 4),
+        ("需求澄清", "xingyu.fu", "付星宇", "doing", 6, 1, 5),
+        ("回归用例", "qa.li", "李测", "wait", 4, 0, 4),
     ],
     "601": [
         ("履约地图底图", "chen", "陈宇", "doing", 8, 2, 6),
@@ -75,6 +77,16 @@ def demo_executions():
     return [dict(item) for item in DEMO_EXECUTIONS]
 
 
+def demo_roles(execution_id):
+    """Product and QA accounts that should stay off the developer board."""
+    if str(execution_id) != "588":
+        return {}
+    return {
+        "xingyu.fu": {"role": "po", "name": "付星宇"},
+        "qa.li": {"role": "qa", "name": "李测"},
+    }
+
+
 def demo_tasks(execution_id):
     rows = _ROWS.get(str(execution_id), [])
     tasks = []
@@ -84,6 +96,7 @@ def demo_tasks(execution_id):
         if status == "closed":
             assigned = "closed"
             finished = {"account": account, "realname": realname}
+        role = (demo_roles(execution_id).get(account) or {}).get("role", "dev")
         tasks.append(
             {
                 "id": f"{execution_id}-{index}",
@@ -95,7 +108,11 @@ def demo_tasks(execution_id):
                 "pri": (index % 3) + 1,
                 "type": "devel",
                 "parent": 0,
-                "assignedTo": {"account": assigned, "realname": realname if assigned != "closed" else "Closed"},
+                "assignedTo": {
+                    "account": assigned,
+                    "realname": realname if assigned != "closed" else "Closed",
+                    "role": role if assigned != "closed" else "",
+                },
                 "assignedToRealName": realname if assigned != "closed" else "",
                 "finishedBy": finished,
                 "project": 80,

@@ -313,7 +313,8 @@
         <li>已完成 = done，已关闭（closed）计入已完成，并归到完成人，而不是「Closed」账号。</li>
         <li>已取消不计入柱状图和合计。父任务不与子任务重复计算。</li>
         <li>工时默认是禅道预计工时（estimate）。柱状图可切换为预估工时对比。</li>
-        <li>P1+P2 = 禅道 pri 为 1 或 2（无 P0；pri=1→P1，pri=2→P2）。工时完成率 = 已完成预计工时 / 合计预计工时。</li>
+        <li>P1+P2 = 禅道 pri 为 1 或 2（无 P0；pri=1→P1，pri=2→P2）。工时完成率 = 已完成预计工时 / 合计预计工时。柱状图姓名下方是该开发的迭代完成率。</li>
+        <li>产品经理、产品主管、测试、测试主管不出现在看板上（例如付星宇）。</li>
       </ul>
     </section>
   </div>
@@ -372,6 +373,11 @@
       return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
       }[ch]));
+    }
+
+    function fmtRate(value) {
+      const n = Math.round((Number(value) || 0) * 10) / 10;
+      return `${Number.isInteger(n) ? n : n}%`;
     }
 
     function fmtHours(value) {
@@ -471,7 +477,7 @@
 
     function scopedTasks() {
       const directory = nameDirectory();
-      return ((state.board && state.board.tasks) || []).filter(matchesPriority).map((task) => ({
+      return ((state.board && state.board.tasks) || []).filter((task) => matchesPriority(task) && !task.excluded).map((task) => ({
         ...task,
         ownerName: resolveOwnerName(task.ownerAccount, task.ownerName, directory),
       }));
@@ -535,6 +541,7 @@
         }
         row.total = total;
         row.rate = total.count ? Math.round((row.done.count / total.count) * 100) : 0;
+        row.hourRate = total.estimate ? Math.round((row.done.estimate / total.estimate) * 1000) / 10 : 0;
         return row;
       });
       peopleRows.sort((a, b) => (b.total.count - a.total.count) || (b.total.estimate - a.total.estimate) || a.name.localeCompare(b.name, "zh"));
@@ -628,6 +635,11 @@
         </article>`).join("");
       const notes = [];
       if (state.priority === "p1p2") notes.push("当前仅统计优先级 P1+P2（禅道 pri=1、2；无 P0）。");
+      const hidden = (state.board && state.board.excludedPeople) || [];
+      if (hidden.length) {
+        const names = hidden.map((person) => `${person.name}${person.roleLabel ? `（${person.roleLabel}）` : ""}`).join("、");
+        notes.push(`已隐藏产品经理、测试：${names}。`);
+      }
       if (totals.other.count) notes.push(`另有 ${totals.other.count} 项已取消或其他状态，未计入合计与柱状图。`);
       if (notes.length) {
         els.stats.insertAdjacentHTML("beforeend", `<p class="meta" style="grid-column:1/-1">${notes.join(" ")}</p>`);
@@ -658,8 +670,8 @@
       const metric = state.metric;
       const rows = [...people()].sort((a, b) => (b.total[metric] - a.total[metric]) || a.name.localeCompare(b.name, "zh"));
       els.chartHint.textContent = metric === "count"
-        ? "当前按任务数比较。堆叠从下到上为未开始、进行中、已完成。点击柱子筛选列表。"
-        : "当前按预计工时比较。堆叠从下到上为未开始、进行中、已完成。点击柱子筛选列表。";
+        ? "当前按任务数比较。堆叠从下到上为未开始、进行中、已完成。姓名下方是工时完成率。点击柱子筛选列表。"
+        : "当前按预计工时比较。堆叠从下到上为未开始、进行中、已完成。姓名下方是工时完成率。点击柱子筛选列表。";
       if (!rows.length) {
         els.chart.innerHTML = `<p class="meta" style="padding:24px">这个迭代还没有可统计的任务。</p>`;
         return;
@@ -667,8 +679,8 @@
       const axis = axisSpec(Math.max(...rows.map((row) => row.total[metric])), metric === "count");
       const max = axis.top;
       const width = Math.max(680, rows.length * 92 + 72);
-      const height = 320;
-      const pad = { top: 28, right: 16, bottom: 54, left: 44 };
+      const height = 348;
+      const pad = { top: 28, right: 16, bottom: 72, left: 44 };
       const innerH = height - pad.top - pad.bottom;
       const innerW = width - pad.left - pad.right;
       const slot = innerW / rows.length;
@@ -693,7 +705,7 @@
         const totalLabel = metric === "count" ? String(row.total.count) : fmtHours(row.total.estimate);
         const barTop = pad.top + innerH - (row.total[metric] / max) * innerH;
         const labelY = Math.max(14, barTop - 8);
-        const tip = `${row.name}：未开始 ${row.wait.count} 项/${fmtHours(row.wait.estimate)}，进行中 ${row.doing.count} 项/${fmtHours(row.doing.estimate)}，已完成 ${row.done.count} 项/${fmtHours(row.done.estimate)}`;
+        const tip = `${row.name} 完成率 ${fmtRate(row.hourRate)}：未开始 ${row.wait.count} 项/${fmtHours(row.wait.estimate)}，进行中 ${row.doing.count} 项/${fmtHours(row.doing.estimate)}，已完成 ${row.done.count} 项/${fmtHours(row.done.estimate)}`;
         const selected = state.memberId === row.account ? "is-selected" : "";
         return `
           <g class="bar-hit ${selected}" data-account="${esc(row.account)}" tabindex="0" role="button">
@@ -701,7 +713,8 @@
             <rect x="${x - 8}" y="${pad.top}" width="${barW + 16}" height="${innerH}" fill="transparent"></rect>
             ${segments}
             <text x="${x + barW / 2}" y="${labelY}" text-anchor="middle" fill="#142028" font-size="12" font-weight="700">${esc(totalLabel)}</text>
-            <text x="${x + barW / 2}" y="${height - 22}" text-anchor="middle" fill="#142028" font-size="13" font-weight="700">${esc(row.name)}</text>
+            <text x="${x + barW / 2}" y="${height - 36}" text-anchor="middle" fill="#142028" font-size="13" font-weight="700">${esc(row.name)}</text>
+            <text x="${x + barW / 2}" y="${height - 16}" text-anchor="middle" fill="#0e7c6b" font-size="12" font-weight="700">${fmtRate(row.hourRate)}</text>
           </g>`;
       }).join("");
       const unit = metric === "count" ? "任务数" : "预计工时";
@@ -729,8 +742,8 @@
           <td><div class="metric doing"><span class="metric__count">${person.doing.count}</span><span class="metric__hours">${fmtHours(person.doing.estimate)}</span></div></td>
           <td><div class="metric done"><span class="metric__count">${person.done.count}</span><span class="metric__hours">${fmtHours(person.done.estimate)}</span></div></td>
           <td>
-            <div class="progress"><span style="width:${person.rate}%"></span></div>
-            <div class="progress-label">${person.rate}% · ${person.done.count}/${person.total.count}</div>
+            <div class="progress"><span style="width:${Math.min(person.hourRate, 100)}%"></span></div>
+            <div class="progress-label">${fmtRate(person.hourRate)} · ${fmtHours(person.done.estimate)}/${fmtHours(person.total.estimate)}</div>
           </td>
           <td><strong>${fmtHours(person.total.estimate)}</strong></td>
         </tr>`).join("") || `<tr><td colspan="6">当前筛选下没有人员</td></tr>`;

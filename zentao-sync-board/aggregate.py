@@ -116,6 +116,60 @@ def is_p1_p2(pri):
     return number in (1, 2)
 
 
+# ZenTao user.role codes. Product and QA stay off the developer board.
+ROLE_LABELS = {
+    "dev": "研发",
+    "qa": "测试",
+    "pm": "项目经理",
+    "po": "产品经理",
+    "td": "研发主管",
+    "pd": "产品主管",
+    "qd": "测试主管",
+    "top": "高层管理",
+    "others": "其他",
+}
+EXCLUDED_ROLE_CODES = {"po", "pd", "qa", "qd"}
+EXCLUDED_ROLE_LABELS = {"产品经理", "产品主管", "测试", "测试主管", "测试人员"}
+
+
+def role_label(role):
+    text = str(role or "").strip()
+    if not text:
+        return ""
+    return ROLE_LABELS.get(text.lower(), text)
+
+
+def is_excluded_role(role):
+    """Hide 产品经理 / 测试 (and their 主管) from the developer board."""
+    text = str(role or "").strip()
+    if not text:
+        return False
+    if text.lower() in EXCLUDED_ROLE_CODES:
+        return True
+    label = role_label(text)
+    return text in EXCLUDED_ROLE_LABELS or label in EXCLUDED_ROLE_LABELS
+
+
+def roles_from_users(users):
+    """account -> {role, name} from ZenTao user or team rows."""
+    directory = {}
+    for user in users or []:
+        if not isinstance(user, dict):
+            continue
+        account = str(user.get("account") or "").strip()
+        if not account or account.lower() in EMPTY_ACCOUNTS:
+            continue
+        role = str(user.get("role") or user.get("roleName") or "").strip()
+        name = str(user.get("realname") or user.get("realName") or user.get("name") or "").strip()
+        current = directory.get(account) or {"role": "", "name": ""}
+        if role:
+            current["role"] = role
+        if name:
+            current["name"] = name
+        directory[account] = current
+    return directory
+
+
 # Back-compat alias for older imports/tests.
 is_p0_p1 = is_p1_p2
 
@@ -341,17 +395,54 @@ def normalize_task_rows(raw, name_directory=None):
     return rows
 
 
-def aggregate_people(raw_tasks):
+def roles_from_tasks(raw_tasks):
+    found = []
+    for raw in raw_tasks or []:
+        if not isinstance(raw, dict):
+            continue
+        for key in ("assignedTo", "finishedBy", "closedBy", "openedBy", "lastEditedBy"):
+            value = raw.get(key)
+            if isinstance(value, dict):
+                found.append(value)
+        for member in raw.get("team") or []:
+            if isinstance(member, dict):
+                found.append(member)
+    return roles_from_users(found)
+
+
+def aggregate_people(raw_tasks, roles=None):
     people = {}
     tasks = []
+    role_directory = roles_from_tasks(raw_tasks)
+    extra = roles if isinstance(roles, dict) else roles_from_users(roles)
+    for account, info in (extra or {}).items():
+        current = role_directory.get(account) or {"role": "", "name": ""}
+        if isinstance(info, dict):
+            if info.get("role"):
+                current["role"] = info["role"]
+            if info.get("name"):
+                current["name"] = info["name"]
+        elif info:
+            current["role"] = str(info)
+        role_directory[account] = current
     name_directory = build_name_directory(raw_tasks)
+    for account, info in (role_directory or {}).items():
+        if isinstance(info, dict):
+            _remember_name(name_directory, account, info.get("name"))
     for raw in flatten_tasks(raw_tasks):
         for task in normalize_task_rows(raw, name_directory=name_directory):
             # Final pass: team-only accounts often lack realname on the row itself.
             mapped = name_directory.get(task["ownerAccount"])
             if mapped:
                 task["ownerName"] = display_name(task["ownerAccount"], mapped)
+            info = (role_directory or {}).get(task["ownerAccount"]) or {}
+            role = info.get("role") if isinstance(info, dict) else str(info or "")
+            task["ownerRole"] = str(role or "")
+            task["ownerRoleLabel"] = role_label(task["ownerRole"])
+            task["excluded"] = is_excluded_role(task["ownerRole"])
             tasks.append(task)
+            if task["excluded"]:
+                continue
             person_row = people.get(task["ownerAccount"])
             if person_row is None:
                 person_row = {
@@ -375,6 +466,11 @@ def aggregate_people(raw_tasks):
         counted = total["count"]
         row["total"] = _round_metrics(total)
         row["rate"] = round(row["done"]["count"] / counted * 100) if counted else 0
+        row["hourRate"] = (
+            round(row["done"]["estimate"] / row["total"]["estimate"] * 1000) / 10
+            if row["total"]["estimate"]
+            else 0
+        )
         for bucket in ("wait", "doing", "done", "other"):
             row[bucket] = _round_metrics(row[bucket])
         rows.append(row)

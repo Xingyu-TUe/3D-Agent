@@ -71,6 +71,16 @@ class ZenTaoClient:
     def list_tasks(self, execution_id):
         return self._collect(f"/api.php/v1/executions/{execution_id}/tasks", "tasks")
 
+    def list_users(self):
+        for key in ("users", "user"):
+            try:
+                rows = self._collect("/api.php/v1/users", key)
+            except ZenTaoError:
+                continue
+            if rows:
+                return rows
+        return []
+
     def _collect(self, path, key):
         items = []
         seen = set()
