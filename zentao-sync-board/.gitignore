@@ -1,0 +1,8 @@
+.zentao.local.json
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+.vercel/
+public/index.html
+.vercel
